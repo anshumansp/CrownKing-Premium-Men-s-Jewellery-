@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShoppingCartIcon, UserIcon, MenuIcon, XIcon } from '@heroicons/react/24/outline';
+import { ShoppingCartIcon, UserIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -80,9 +80,9 @@ export default function Layout({ children }: LayoutProps) {
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                             >
                                 {isMenuOpen ? (
-                                    <XIcon className="h-6 w-6 text-gray-600" />
+                                    <XMarkIcon className="h-6 w-6 text-gray-600" />
                                 ) : (
-                                    <MenuIcon className="h-6 w-6 text-gray-600" />
+                                        <Bars3Icon className="h-6 w-6 text-gray-600" />
                                 )}
                             </button>
                         </div>

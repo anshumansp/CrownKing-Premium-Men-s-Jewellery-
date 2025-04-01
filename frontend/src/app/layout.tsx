@@ -1,31 +1,29 @@
-import type { Metadata } from "next";
-import { Poppins } from "next/font/google"; // Import Poppins
-import Header from "@/components/Header"; // Import Header
-import Footer from "@/components/Footer"; // Import Footer
-import "./globals.css";
+import './globals.css';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
-// Configure Poppins font
-const poppins = Poppins({
-  weight: ["300", "400", "500", "600", "700"], // Include desired weights
-  subsets: ["latin"],
-  display: "swap", // Improve font loading performance
-  variable: "--font-poppins", // Define CSS variable
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
 });
 
 export const metadata: Metadata = {
-  title: "CrownKing",
-  description: "CrownKing - Pure Timeless Unforgettable",
+  title: 'CrownKing | Premium Men\'s Jewelry',
+  description: 'Discover exquisite jewelry pieces for the modern man.',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+  }) {
   return (
-    <html lang="en" className={`${poppins.variable} h-full`}>
-      <body className="flex flex-col min-h-screen antialiased bg-white">
-        <Header />
+    <html lang="en" className={inter.variable}>
+      <body className="flex flex-col min-h-screen">
+        <Navbar />
         <main className="flex-grow">
           {children}
         </main>
