@@ -201,7 +201,7 @@ This project is licensed under the MIT License
 
 ## 👤 Contributors
 
-- [Your Name](https://github.com/yourusername) - Lead Developer
+- [Anshuman Parmar](https://github.com/anshumansp) - Lead Developer
 
 ---
 
