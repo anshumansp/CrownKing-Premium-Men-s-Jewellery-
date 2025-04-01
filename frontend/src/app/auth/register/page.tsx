@@ -2,143 +2,141 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
-const RegisterPage: React.FC = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+export default function Register() {
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
     // Basic validation
-    if (!name || !email || !password || !confirmPassword) {
-      setError('Please fill in all fields.');
-      setLoading(false);
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords don't match");
       return;
     }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      setLoading(false);
-      return;
-    }
-    if (password.length < 6) { // Example password policy
-        setError('Password must be at least 6 characters long.');
-        setLoading(false);
-        return;
-    }
 
-    // Placeholder for actual registration logic (API call)
-    console.log('Registering with:', { name, email, password });
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    // Example: Handle success or error from API
-    // setError('Email already exists.'); // Example error
+    try {
+      // For demo purposes, let's just redirect
+      router.push('/auth/login');
 
-    setLoading(false);
-    // On success, redirect user (e.g., to login page or dashboard)
+      // In a real application, you would use this:
+      /*
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      // Redirect to login page
+      router.push('/auth/login');
+      */
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed');
+    }
   };
 
   return (
-    <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-lg shadow-lg border border-brand-teal/20">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-brand-dark-blue">
-            Create your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link href="/auth/login" className="font-medium text-brand-teal hover:text-brand-dark-blue">
-              Sign in
-            </Link>
-          </p>
+    <div className="flex flex-col items-center w-full max-w-md mx-auto">
+      <div className="mb-10 text-center w-full max-w-[300px]">
+        <Image
+          src="/CrownKing.svg"
+          width={300}
+          height={100}
+          alt="CrownKing Logo"
+          className="mx-auto"
+          priority
+        />
+      </div>
+
+      <div className="w-full bg-white shadow-md p-8 border border-gray-100">
+        <h3 className="text-xl font-medium mb-4">Enter Name</h3>
+        <input
+          type="text"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          placeholder="Enter Your Full Name"
+          className="w-full p-3 mb-8 border border-gray-300 focus:border-gray-800 focus:outline-none"
+        />
+
+        <h3 className="text-xl font-medium mb-4">Enter Email</h3>
+        <input
+          type="email"
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          placeholder="Enter Your Email"
+          className="w-full p-3 mb-8 border border-gray-300 focus:border-gray-800 focus:outline-none"
+        />
+
+        <h3 className="text-xl font-medium mb-4">Create Password</h3>
+        <input
+          type="password"
+          value={formData.password}
+          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          placeholder="****"
+          className="w-full p-3 mb-8 border border-gray-300 focus:border-gray-800 focus:outline-none"
+        />
+
+        <h3 className="text-xl font-medium mb-4">Confirm Password</h3>
+        <input
+          type="password"
+          value={formData.confirmPassword}
+          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+          placeholder="****"
+          className="w-full p-3 mb-8 border border-gray-300 focus:border-gray-800 focus:outline-none"
+        />
+
+        {error && (
+          <div className="mb-4 p-3 text-red-600 bg-red-50 border border-red-200 rounded">
+            {error}
+          </div>
+        )}
+
+        <button
+          onClick={handleSubmit}
+          className="w-full bg-black text-white py-3 font-medium hover:bg-gray-800 transition-colors mb-4"
+        >
+          REGISTER NOW
+        </button>
+
+        <div className="flex items-center justify-center my-6">
+          <div className="border-t border-gray-300 flex-grow mr-3"></div>
+          <span className="text-gray-500">or</span>
+          <div className="border-t border-gray-300 flex-grow ml-3"></div>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="name" className="sr-only">Full name</label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                autoComplete="name"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-brand-teal focus:border-brand-teal focus:z-10 sm:text-sm"
-                placeholder="Full name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label htmlFor="email-address" className="sr-only">Email address</label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-brand-teal focus:border-brand-teal focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">Password</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-brand-teal focus:border-brand-teal focus:z-10 sm:text-sm"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label htmlFor="confirm-password" className="sr-only">Confirm Password</label>
-              <input
-                id="confirm-password"
-                name="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-brand-teal focus:border-brand-teal focus:z-10 sm:text-sm"
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-          </div>
 
-          {error && (
-            <p className="text-sm text-red-600 text-center">{error}</p>
-          )}
+        <button className="w-full border border-gray-300 py-3 font-medium hover:bg-gray-50 transition-colors mb-8">
+          Continue With Google
+        </button>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-brand-teal hover:bg-brand-dark-blue focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-teal transition duration-150 ease-in-out ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {loading ? 'Creating account...' : 'Create Account'}
-            </button>
-          </div>
-        </form>
+        <div className="text-center">
+          <p className="text-gray-600 mb-2">Already Have An Account?</p>
+          <Link href="/auth/login" className="text-blue-600 hover:underline">
+            Login
+          </Link>
+        </div>
       </div>
     </div>
   );
-};
-
-export default RegisterPage;
+}

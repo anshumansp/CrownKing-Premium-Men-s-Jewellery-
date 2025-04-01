@@ -2,4 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Optional: Add any custom global base styles here */
+:root {
+  --primary: #1E212B;
+  --secondary: #E5DFD0;
+  --accent: #F5F2E3;
+  --background: #FFFFFF;
+  --text: #1E212B;
+  --text-light: #6B7280;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-brand-blue-dark;
+    font-family: var(--font-poppins);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand-primary text-white px-6 py-2 rounded-md hover:bg-brand-blue-light transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-brand-secondary text-brand-blue-dark px-6 py-2 rounded-md hover:bg-brand-cream-dark/80 transition-colors duration-200;
+  }
+
+  .btn-outline {
+    @apply border border-brand-primary text-brand-primary px-6 py-2 rounded-md hover:bg-brand-primary hover:text-white transition-colors duration-200;
+  }
+
+  .card {
+    @apply bg-white rounded-md shadow-md p-4 hover:shadow-lg transition-shadow duration-200;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-primary focus:border-transparent;
+  }
+
+  .nav-link {
+    @apply text-brand-blue-dark hover:text-brand-blue-light transition-colors duration-200;
+  }
+  
+  .section-cream {
+    @apply bg-brand-cream-light py-12 px-4;
+  }
+  
+  .section-white {
+    @apply bg-white py-12 px-4;
+  }
+  
+  .heading-lg {
+    @apply text-3xl md:text-4xl font-semibold text-brand-blue-dark;
+  }
+  
+  .heading-md {
+    @apply text-2xl font-semibold text-brand-blue-dark;
+  }
+  
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .footer-link {
+    @apply text-white hover:text-brand-secondary transition-colors duration-200;
+  }
+}
+
+/* Custom Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-brand-primary rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-brand-blue-light;
+}

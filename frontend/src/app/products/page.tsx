@@ -1,61 +1,325 @@
-import React from 'react';
-import Link from 'next/link';
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Product } from '@/types';
+import ProductCard from '@/components/ProductCard';
+import TabSection from '@/components/TabSection';
 import Image from 'next/image';
 
-// Placeholder product data (replace with actual data fetching)
-const products = Array.from({ length: 12 }).map((_, i) => ({
-  id: `ck${i + 1}`,
-  name: `Men's Jewellery Item ${i + 1}`,
-  price: (Math.random() * 300 + 50).toFixed(2), // Random price between 50 and 350
-  imageUrl: `https://picsum.photos/seed/productpage${i + 1}/400/400`, // Random placeholder image
-  slug: `mens-jewellery-item-${i + 1}`,
-}));
+// Define the product data with realistic images from public folder
+const products: Product[] = [
+  {
+    id: '1',
+    name: 'Luxury Gold Chain Necklace',
+    description: 'Premium handcrafted 24K gold chain necklace for men, perfect for special occasions',
+    price: 82917,
+    images: ['/jewe1.webp'],
+    category: 'Necklaces',
+    subCategory: 'Gold',
+    specifications: {
+      material: '24K Gold',
+      weight: '45g',
+      dimensions: '20 inches',
+      warranty: '2 years',
+    },
+    rating: 4.8,
+    reviews: 124,
+    inStock: true,
+    featured: true,
+    discount: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    name: 'Classic Silver Bracelet',
+    description: 'Elegant pure silver bracelet with contemporary design for the modern man',
+    price: 38171,
+    images: ['/jewe2.webp'],
+    category: 'Bracelets',
+    subCategory: 'Silver',
+    specifications: {
+      material: 'Pure Silver',
+      weight: '25g',
+      dimensions: '8 inches',
+      warranty: '1 year',
+    },
+    rating: 4.7,
+    reviews: 98,
+    inStock: true,
+    featured: true,
+    discount: 15,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: '3',
+    name: 'Diamond-Studded Ring',
+    description: 'Premium gold ring with authentic diamond studs for an elegant statement',
+    price: 107891,
+    images: ['/jewe3.jpeg'],
+    category: 'Rings',
+    subCategory: 'Diamond',
+    specifications: {
+      material: '18K Gold with Diamonds',
+      weight: '12g',
+      dimensions: 'Size 10',
+      warranty: '5 years',
+    },
+    rating: 4.9,
+    reviews: 76,
+    inStock: true,
+    featured: true,
+    discount: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: '4',
+    name: 'Royal Platinum Cufflinks',
+    description: 'Sophisticated platinum cufflinks with minimalist design for formal occasions',
+    price: 66391,
+    images: ['/jewe4.jpg'],
+    category: 'Accessories',
+    subCategory: 'Cufflinks',
+    specifications: {
+      material: 'Platinum',
+      weight: '15g',
+      dimensions: '1.5 cm diameter',
+      warranty: '3 years',
+    },
+    rating: 4.6,
+    reviews: 45,
+    inStock: true,
+    featured: true,
+    discount: 10,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: '5',
+    name: 'Designer Gold Ring',
+    description: 'Artisan crafted designer gold ring with unique patterns',
+    price: 64999,
+    images: ['/jewe5.jpg'],
+    category: 'Rings',
+    subCategory: 'Gold',
+    specifications: {
+      material: '22K Gold',
+      weight: '8g',
+      dimensions: 'Size 9',
+      warranty: '2 years',
+    },
+    rating: 4.5,
+    reviews: 87,
+    inStock: true,
+    featured: true,
+    discount: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: '6',
+    name: 'Premium Silver Earrings',
+    description: 'Sophisticated silver earrings for men with minimalist design',
+    price: 29990,
+    images: ['/jewe6.avif'],
+    category: 'Earrings',
+    subCategory: 'Silver',
+    specifications: {
+      material: 'Pure Silver',
+      weight: '5g',
+      dimensions: '1.2 cm',
+      warranty: '1 year',
+    },
+    rating: 4.3,
+    reviews: 58,
+    inStock: true,
+    featured: true,
+    discount: 5,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: '7',
+    name: 'Royal Gold Bracelet',
+    description: 'Luxurious gold bracelet with intricate design and premium finish',
+    price: 95990,
+    images: ['/jewe7.webp'],
+    category: 'Bracelets',
+    subCategory: 'Gold',
+    specifications: {
+      material: '24K Gold',
+      weight: '35g',
+      dimensions: '7.5 inches',
+      warranty: '5 years',
+    },
+    rating: 4.9,
+    reviews: 112,
+    inStock: true,
+    featured: true,
+    discount: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: '8',
+    name: 'Diamond Pendant Chain',
+    description: 'Stylish pendant chain with authentic diamond centerpiece',
+    price: 74999,
+    images: ['/jewe8.webp'],
+    category: 'Necklaces',
+    subCategory: 'Diamond',
+    specifications: {
+      material: '18K Gold with Diamond',
+      weight: '20g',
+      dimensions: '22 inches',
+      warranty: '3 years',
+    },
+    rating: 4.7,
+    reviews: 68,
+    inStock: true,
+    featured: true,
+    discount: 12,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: '9',
+    name: 'Classic Tie Pin',
+    description: 'Elegant gold tie pin with subtle design patterns for formal wear',
+    price: 15990,
+    images: ['/jewe9.jpg'],
+    category: 'Accessories',
+    subCategory: 'Tie Pins',
+    specifications: {
+      material: '18K Gold',
+      weight: '6g',
+      dimensions: '5.5 cm',
+      warranty: '1 year',
+    },
+    rating: 4.4,
+    reviews: 42,
+    inStock: true,
+    featured: true,
+    discount: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: '10',
+    name: 'Luxury Tungsten Ring',
+    description: 'Modern tungsten carbide ring with sleek black finish for the contemporary man',
+    price: 42599,
+    images: ['/jewe10.jpg'],
+    category: 'Rings',
+    subCategory: 'Tungsten',
+    specifications: {
+      material: 'Tungsten Carbide',
+      weight: '18g',
+      dimensions: 'Size 11',
+      warranty: '2 years',
+    },
+    rating: 4.6,
+    reviews: 59,
+    inStock: true,
+    featured: true,
+    discount: 8,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: '11',
+    name: 'Elegant Leather Bracelet',
+    description: 'Sophisticated braided leather bracelet with stainless steel magnetic clasp',
+    price: 18499,
+    images: ['/jewe11.webp'],
+    category: 'Bracelets',
+    subCategory: 'Leather',
+    specifications: {
+      material: 'Premium Leather and Stainless Steel',
+      weight: '12g',
+      dimensions: '8.5 inches',
+      warranty: '1 year',
+    },
+    rating: 4.5,
+    reviews: 73,
+    inStock: true,
+    featured: true,
+    discount: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: '12',
+    name: 'Diamond-Accented Watch',
+    description: 'Luxury chronograph watch with diamond accents and premium leather strap',
+    price: 154999,
+    images: ['/jewe12.webp'],
+    category: 'Watches',
+    subCategory: 'Luxury',
+    specifications: {
+      material: 'Stainless Steel with Diamond Accents',
+      weight: '85g',
+      dimensions: '42mm case',
+      warranty: '5 years',
+    },
+    rating: 4.9,
+    reviews: 94,
+    inStock: true,
+    featured: true,
+    discount: 15,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
 
-const ProductsPage: React.FC = () => {
+// Define the tabs for the product categories
+const tabs = [
+  { id: 'all', label: 'ALL' },
+  { id: 'new', label: 'NEW ARRIVALS' },
+  { id: 'best', label: 'BEST SELLER' },
+  { id: 'top', label: 'TOP RATED' }
+];
+
+export default function ProductsPage() {
+  const [activeTab, setActiveTab] = useState('all');
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>(products);
+
+  useEffect(() => {
+    // Filter products based on active tab
+    if (activeTab === 'all') {
+      setFilteredProducts(products);
+    } else if (activeTab === 'new') {
+      // Sort by creation date for new arrivals
+      const sorted = [...products].sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ).slice(0, 8);
+      setFilteredProducts(sorted);
+    } else if (activeTab === 'best') {
+      // Simulate best sellers by number of reviews
+      const sorted = [...products].sort((a, b) => b.reviews - a.reviews).slice(0, 8);
+      setFilteredProducts(sorted);
+    } else if (activeTab === 'top') {
+      // Sort by rating for top rated
+      const sorted = [...products].sort((a, b) => b.rating - a.rating).slice(0, 8);
+      setFilteredProducts(sorted);
+    }
+  }, [activeTab]);
+
   return (
-    <div>
-      <h1 className="text-3xl font-semibold text-brand-dark-blue mb-8">
-        All Products
-      </h1>
-
-      {/* Optional: Add Filters/Sorting options here */}
-      {/* <div className="mb-8 flex justify-between items-center">
-        <span>Filters Placeholder</span>
-        <span>Sort By Placeholder</span>
-      </div> */}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-        {products.map((product) => (
-          <div key={product.id} className="border border-brand-teal/30 rounded-lg shadow-md overflow-hidden bg-white hover:shadow-xl transition-shadow duration-300 group">
-            <Link href={`/products/${product.slug}`}>
-              <div className="relative h-64 bg-gray-200 group-hover:opacity-90 transition-opacity duration-300">
-                <Image
-                  src={product.imageUrl}
-                  alt={product.name}
-                  layout="fill"
-                  objectFit="cover"
-                />
-              </div>
-              <div className="p-4">
-                <h3 className="text-lg font-medium text-brand-dark-blue mb-1 truncate group-hover:text-brand-teal">
-                  {product.name}
-                </h3>
-                <p className="text-brand-teal font-semibold mb-3">${product.price}</p>
-                <button className="w-full bg-brand-teal text-white py-2 rounded-md hover:bg-brand-dark-blue transition duration-300 text-sm font-medium">
-                  Add to Cart
-                </button>
-              </div>
-            </Link>
-          </div>
-        ))}
+    <div className="container mx-auto px-4 py-8">
+      {/* Product Tabs */}
+      <div className="border-b border-gray-200">
+        <TabSection tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
       </div>
 
-      {/* Optional: Add Pagination here */}
-      {/* <div className="mt-12 text-center">
-        <span>Pagination Placeholder</span>
-      </div> */}
+      {/* Product Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12 py-8">
+        {filteredProducts.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
     </div>
   );
-};
-
-export default ProductsPage;
+}

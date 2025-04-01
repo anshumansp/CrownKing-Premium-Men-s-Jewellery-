@@ -1,5 +1,4 @@
 import type { Config } from "tailwindcss";
-import defaultTheme from "tailwindcss/defaultTheme";
 
 const config: Config = {
   content: [
@@ -9,32 +8,34 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      fontFamily: {
-        sans: ["Poppins", ...defaultTheme.fontFamily.sans], // Add Poppins as the default sans-serif font
-      },
       colors: {
         brand: {
-          teal: '#008080', // Standard Teal
-          cream: '#FFFDD0', // Cream
-          'dark-blue': '#00008B', // Dark Blue
-          'teal-light': '#40E0D0', // Lighter teal for gradients
-          'cream-dark': '#F5F5DC', // Darker cream for gradients/accents
-          'blue-light': '#ADD8E6', // Lighter blue for gradients/accents
+          primary: '#1E212B',
+          secondary: '#E5DFD0',
+          'cream-light': '#F5F2E3',
+          'cream-dark': '#E5DFD0',
+          'blue-dark': '#1E212B',
+          'blue-light': '#384152',
+          white: '#FFFFFF',
+          'gray-light': '#F8F8F8',
+          'gray-medium': '#6B7280',
         },
       },
+      fontFamily: {
+        sans: ['var(--font-poppins)'],
+      },
       backgroundImage: {
-        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "gradient-conic":
-          "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
-        // Example gradient using the theme colors
-        "brand-gradient": "linear-gradient(to right, var(--tw-gradient-stops))",
-        // Example gradients using utility classes:
-        // bg-gradient-to-r from-brand-teal to-brand-cream
-        // bg-gradient-to-b from-brand-cream to-brand-dark-blue
-        // bg-gradient-to-tr from-brand-teal-light to-brand-blue-light
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/forms'),
+  ],
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
 };
+
 export default config;

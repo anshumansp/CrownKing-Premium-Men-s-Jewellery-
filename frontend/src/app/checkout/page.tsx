@@ -1,230 +1,320 @@
-'use client'; // Mark as client component for form handling
+'use client';
 
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { CartItem } from '@/types';
 import Link from 'next/link';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+import PaymentForm from '@/components/PaymentForm';
 
-// Placeholder data - in reality, this would come from cart state/API
-const orderSummary = {
-  subtotal: 289.49,
-  shipping: 5.00,
-  tax: 23.16,
-  total: 317.65,
-  items: [
-    { id: 'ck1', name: "Men's Jewellery Item 1", price: 199.99, quantity: 1 },
-    { id: 'ck3', name: "Men's Jewellery Item 3", price: 89.50, quantity: 2 },
-  ]
-};
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
-const CheckoutPage: React.FC = () => {
-  const [shippingInfo, setShippingInfo] = useState({
-    name: '', address: '', city: '', state: '', zip: '', country: 'India'
-  });
-  const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
-  const [billingInfo, setBillingInfo] = useState({
-    name: '', address: '', city: '', state: '', zip: '', country: 'India'
-  });
-  const [paymentInfo, setPaymentInfo] = useState({
-    cardNumber: '', expiryDate: '', cvv: ''
-  });
-  const [loading, setLoading] = useState(false);
+export default function Checkout() {
+  const router = useRouter();
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: ''
+  });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, section: 'shipping' | 'billing' | 'payment') => {
+  useEffect(() => {
+    fetchCart();
+  }, []);
+
+  const fetchCart = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please login to checkout');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/cart', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch cart');
+      }
+
+      const data = await response.json();
+      setCartItems(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch cart');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    if (section === 'shipping') {
-      setShippingInfo(prev => ({ ...prev, [name]: value }));
-    } else if (section === 'billing') {
-      setBillingInfo(prev => ({ ...prev, [name]: value }));
-    } else {
-      setPaymentInfo(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const calculateTotal = () => {
+    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  };
+
+  const handleCreateOrder = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please login to place order');
+        return;
+      }
+
+      const orderData = {
+        items: cartItems,
+        shippingAddress: formData,
+        total: calculateTotal()
+      };
+
+      const response = await fetch('http://localhost:5000/api/orders', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create order');
+      }
+
+      const data = await response.json();
+      setOrderId(data.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create order');
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    // Basic validation (add more comprehensive validation)
-    if (!shippingInfo.name || !shippingInfo.address || !shippingInfo.city || !shippingInfo.zip) {
-        setError('Please fill in all required shipping fields.');
-        setLoading(false);
-        return;
-    }
-    if (!billingSameAsShipping && (!billingInfo.name || !billingInfo.address || !billingInfo.city || !billingInfo.zip)) {
-        setError('Please fill in all required billing fields.');
-        setLoading(false);
-        return;
-    }
-     if (!paymentInfo.cardNumber || !paymentInfo.expiryDate || !paymentInfo.cvv) {
-        setError('Please fill in all payment details.');
-        setLoading(false);
-        return;
-    }
-
-    // Placeholder for actual checkout logic (API call to process payment and create order)
-    console.log('Placing order with:', {
-      shipping: shippingInfo,
-      billing: billingSameAsShipping ? shippingInfo : billingInfo,
-      payment: paymentInfo, // In real app, only send tokenized payment info
-      order: orderSummary
-    });
-
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    // Example: Handle success or error from API
-    // setError('Payment failed. Please check your details.'); // Example error
-
-    setLoading(false);
-    // On success, redirect to an order confirmation page
-    // router.push('/order-confirmation?orderId=12345');
+  const handlePaymentSuccess = () => {
+    router.push('/orders/confirmation');
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center text-red-600">{error}</div>
+        <div className="text-center mt-4">
+          <Link href="/auth/login" className="text-brand-teal hover:underline">
+            Login to checkout
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (cartItems.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-brand-dark-blue mb-4">Your cart is empty</h2>
+          <Link href="/products" className="btn-primary">
+            Continue Shopping
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-semibold text-brand-dark-blue mb-8">Checkout</h1>
+      <h1 className="text-3xl font-bold text-brand-dark-blue mb-8">Checkout</h1>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Shipping & Payment Forms */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Shipping Address */}
-          <section className="bg-white p-6 rounded-lg shadow border border-gray-200">
-            <h2 className="text-xl font-semibold text-brand-dark-blue mb-4">Shipping Address</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
-                <label htmlFor="shipping-name" className="block text-sm font-medium text-gray-700">Full Name</label>
-                <input type="text" id="shipping-name" name="name" required value={shippingInfo.name} onChange={(e) => handleInputChange(e, 'shipping')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-brand-teal focus:border-brand-teal" />
-              </div>
-              <div className="sm:col-span-2">
-                <label htmlFor="shipping-address" className="block text-sm font-medium text-gray-700">Address</label>
-                <input type="text" id="shipping-address" name="address" required value={shippingInfo.address} onChange={(e) => handleInputChange(e, 'shipping')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-brand-teal focus:border-brand-teal" />
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div>
+          <h2 className="text-xl font-semibold text-brand-dark-blue mb-6">Shipping Information</h2>
+          <form className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="shipping-city" className="block text-sm font-medium text-gray-700">City</label>
-                <input type="text" id="shipping-city" name="city" required value={shippingInfo.city} onChange={(e) => handleInputChange(e, 'shipping')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-brand-teal focus:border-brand-teal" />
-              </div>
-              <div>
-                <label htmlFor="shipping-state" className="block text-sm font-medium text-gray-700">State / Province</label>
-                <input type="text" id="shipping-state" name="state" required value={shippingInfo.state} onChange={(e) => handleInputChange(e, 'shipping')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-brand-teal focus:border-brand-teal" />
-              </div>
-              <div>
-                <label htmlFor="shipping-zip" className="block text-sm font-medium text-gray-700">ZIP / Postal Code</label>
-                <input type="text" id="shipping-zip" name="zip" required value={shippingInfo.zip} onChange={(e) => handleInputChange(e, 'shipping')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-brand-teal focus:border-brand-teal" />
-              </div>
-               <div>
-                <label htmlFor="shipping-country" className="block text-sm font-medium text-gray-700">Country</label>
-                <select id="shipping-country" name="country" value={shippingInfo.country} onChange={(e) => handleInputChange(e, 'shipping')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-brand-teal focus:border-brand-teal bg-white">
-                    <option>India</option>
-                    <option>United States</option>
-                    <option>Canada</option>
-                    {/* Add other countries */}
-                </select>
-              </div>
-            </div>
-          </section>
-
-          {/* Billing Address */}
-          <section className="bg-white p-6 rounded-lg shadow border border-gray-200">
-             <h2 className="text-xl font-semibold text-brand-dark-blue mb-4">Billing Address</h2>
-             <div className="flex items-center mb-4">
+                <label className="block text-sm font-medium text-gray-700">First Name</label>
                 <input
-                    id="billing-same"
-                    name="billing-same"
-                    type="checkbox"
-                    checked={billingSameAsShipping}
-                    onChange={(e) => setBillingSameAsShipping(e.target.checked)}
-                    className="h-4 w-4 text-brand-teal focus:ring-brand-teal border-gray-300 rounded"
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
                 />
-                <label htmlFor="billing-same" className="ml-2 block text-sm text-gray-900">
-                    Same as shipping address
-                </label>
-             </div>
-             {!billingSameAsShipping && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Billing form fields similar to shipping */}
-                     <div className="sm:col-span-2">
-                        <label htmlFor="billing-name" className="block text-sm font-medium text-gray-700">Full Name</label>
-                        <input type="text" id="billing-name" name="name" required={!billingSameAsShipping} value={billingInfo.name} onChange={(e) => handleInputChange(e, 'billing')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-brand-teal focus:border-brand-teal" />
-                    </div>
-                    {/* ... other billing fields ... */}
-                </div>
-             )}
-          </section>
-
-          {/* Payment Details */}
-          <section className="bg-white p-6 rounded-lg shadow border border-gray-200">
-            <h2 className="text-xl font-semibold text-brand-dark-blue mb-4">Payment Details</h2>
-            {/* Placeholder for Payment Gateway Integration (e.g., Stripe Elements) */}
-            <div className="space-y-4">
-                 <div>
-                    <label htmlFor="card-number" className="block text-sm font-medium text-gray-700">Card Number</label>
-                    <input type="text" id="card-number" name="cardNumber" required placeholder="**** **** **** ****" value={paymentInfo.cardNumber} onChange={(e) => handleInputChange(e, 'payment')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-brand-teal focus:border-brand-teal" />
-                </div>
-                 <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label htmlFor="expiry-date" className="block text-sm font-medium text-gray-700">Expiry Date</label>
-                        <input type="text" id="expiry-date" name="expiryDate" required placeholder="MM/YY" value={paymentInfo.expiryDate} onChange={(e) => handleInputChange(e, 'payment')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-brand-teal focus:border-brand-teal" />
-                    </div>
-                    <div>
-                        <label htmlFor="cvv" className="block text-sm font-medium text-gray-700">CVV</label>
-                        <input type="text" id="cvv" name="cvv" required placeholder="***" value={paymentInfo.cvv} onChange={(e) => handleInputChange(e, 'payment')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-brand-teal focus:border-brand-teal" />
-                    </div>
-                 </div>
-                 <p className="text-xs text-gray-500 mt-2">Your payment information is secure.</p>
-            </div>
-          </section>
-        </div>
-
-        {/* Order Summary */}
-        <div className="lg:col-span-1">
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200 sticky top-24">
-            <h2 className="text-xl font-semibold text-brand-dark-blue mb-6 border-b pb-3">Order Summary</h2>
-            <div className="space-y-4 mb-6">
-                {orderSummary.items.map(item => (
-                    <div key={item.id} className="flex justify-between items-center text-sm">
-                        <span>{item.name} (x{item.quantity})</span>
-                        <span className="text-gray-600">${(item.price * item.quantity).toFixed(2)}</span>
-                    </div>
-                ))}
-            </div>
-             <div className="space-y-2 mb-6 text-gray-700 border-t pt-4">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>${orderSummary.subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Shipping</span>
-                  <span>${orderSummary.shipping.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax</span>
-                  <span>${orderSummary.tax.toFixed(2)}</span>
-                </div>
               </div>
-              <div className="flex justify-between font-semibold text-xl text-brand-dark-blue border-t pt-4">
-                <span>Order total</span>
-                <span>${orderSummary.total.toFixed(2)}</span>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
+                />
               </div>
+            </div>
 
-              {error && (
-                <p className="text-sm text-red-600 text-center mt-4">{error}</p>
-              )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Phone</label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Address</label>
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">City</label>
+                <input
+                  type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleInputChange}
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">State</label>
+                <input
+                  type="text"
+                  name="state"
+                  value={formData.state}
+                  onChange={handleInputChange}
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">ZIP Code</label>
+                <input
+                  type="text"
+                  name="zipCode"
+                  value={formData.zipCode}
+                  onChange={handleInputChange}
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Country</label>
+              <input
+                type="text"
+                name="country"
+                value={formData.country}
+                onChange={handleInputChange}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
+              />
+            </div>
 
             <button
-              type="submit"
-              disabled={loading}
-              className={`mt-6 w-full bg-brand-teal hover:bg-brand-dark-blue text-white font-semibold py-3 rounded-md transition duration-300 shadow-md ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              type="button"
+              onClick={handleCreateOrder}
+              className="btn-primary w-full"
             >
-              {loading ? 'Processing...' : 'Place Order'}
+              Continue to Payment
             </button>
-            <p className="text-xs text-gray-500 mt-4 text-center">
-                By placing your order, you agree to our <Link href="/terms" className="underline hover:text-brand-teal">Terms of Service</Link>.
-            </p>
+          </form>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold text-brand-dark-blue mb-6">Order Summary</h2>
+          <div className="bg-white p-6 rounded-lg shadow">
+            {cartItems.map((item) => (
+              <div key={item.id} className="flex justify-between mb-4">
+                <div>
+                  <h3 className="font-medium">{item.name}</h3>
+                  <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                </div>
+                <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+              </div>
+            ))}
+
+            <div className="border-t pt-4">
+              <div className="flex justify-between mb-2">
+                <span>Subtotal</span>
+                <span>${calculateTotal().toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span>Shipping</span>
+                <span>Free</span>
+              </div>
+              <div className="flex justify-between font-bold text-lg">
+                <span>Total</span>
+                <span>${calculateTotal().toFixed(2)}</span>
+              </div>
+            </div>
+
+            {orderId && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-brand-dark-blue mb-4">Payment</h3>
+                <Elements stripe={stripePromise}>
+                  <PaymentForm
+                    amount={calculateTotal()}
+                    orderId={orderId}
+                    onSuccess={handlePaymentSuccess}
+                    onError={setError}
+                  />
+                </Elements>
+              </div>
+            )}
           </div>
         </div>
-      </form>
+      </div>
     </div>
   );
-};
-
-export default CheckoutPage;
+}
