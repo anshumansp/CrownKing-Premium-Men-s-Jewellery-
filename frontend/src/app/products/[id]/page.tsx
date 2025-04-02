@@ -313,5 +313,37 @@ export default async function ProductPage({ params }: PageProps) {
         notFound();
     }
 
-    return <ProductClient product={product} />;
-} 
+    return (
+        <>
+            <ProductClient product={product} />
+            {/* Similar Products Section */}
+            <div className="mt-16">
+                <h2 className="text-2xl font-bold mb-8">Similar Products</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {products
+                        .filter(p => p.id !== params.id && p.category === product.category)
+                        .slice(0, 4)
+                        .map((similarProduct) => (
+                            <ProductCard key={similarProduct.id} product={similarProduct} />
+                        ))}
+                </div>
+                <div className="mt-10 text-center">
+                    <Link
+                        href="/products"
+                        className="inline-block bg-brand-primary text-white px-8 py-3 font-medium hover:bg-brand-primary-dark transition-colors"
+                    >
+                        View All Products
+                    </Link>
+                </div>
+            </div>
+        </>
+    );
+}
+
+export async function generateMetadata(props, parent) {
+    const params = await props.params;
+    const searchParams = await props.searchParams;
+    const { id } = params;
+    // rest of your code
+}
+

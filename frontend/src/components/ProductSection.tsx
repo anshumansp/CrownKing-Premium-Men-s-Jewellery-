@@ -310,20 +310,20 @@ export default function ProductSection() {
     useEffect(() => {
         // Filter products based on active tab
         if (activeTab === 'all') {
-            setFilteredProducts(products);
+            setFilteredProducts(products.slice(0, 8));
         } else if (activeTab === 'new') {
             // Sort by creation date for new arrivals
             const sorted = [...products].sort((a, b) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            ).slice(0, 6);
+            ).slice(0, 8);
             setFilteredProducts(sorted);
         } else if (activeTab === 'best') {
             // Simulate best sellers by number of reviews
-            const sorted = [...products].sort((a, b) => b.reviews - a.reviews).slice(0, 6);
+            const sorted = [...products].sort((a, b) => b.reviews - a.reviews).slice(0, 8);
             setFilteredProducts(sorted);
         } else if (activeTab === 'top') {
             // Sort by rating for top rated
-            const sorted = [...products].sort((a, b) => b.rating - a.rating).slice(0, 6);
+            const sorted = [...products].sort((a, b) => b.rating - a.rating).slice(0, 8);
             setFilteredProducts(sorted);
         }
     }, [activeTab]);

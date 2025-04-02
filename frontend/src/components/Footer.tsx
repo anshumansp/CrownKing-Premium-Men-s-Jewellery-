@@ -160,6 +160,9 @@ const Footer: React.FC = () => {
               </Link>
             </div>
           </div>
+          <div className="mt-4 text-center text-gray-400 text-sm">
+            Designed and Developed by Anshuman
+          </div>
         </div>
       </div>
     </footer>
