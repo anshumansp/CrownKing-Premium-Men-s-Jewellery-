@@ -13,6 +13,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'CrownKing | Premium Men\'s Jewelry',
   description: 'Discover exquisite jewelry pieces for the modern man.',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
