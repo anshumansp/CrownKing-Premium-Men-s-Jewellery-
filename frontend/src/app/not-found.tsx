@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 export default function NotFound() {
   return (
-    <div className="container mx-auto px-4 py-16 text-center">
+    <div className="container mx-auto mt-12 px-4 py-16 text-center">
       <div className="mb-6">
         <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-red-100 text-red-500 mb-6">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
