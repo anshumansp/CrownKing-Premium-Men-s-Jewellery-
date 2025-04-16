@@ -2,10 +2,13 @@ import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '../config/db';
 import User from './user.model';
 
+export type AddressType = 'shipping' | 'billing';
+
 // Address interface based on API contract
 export interface AddressAttributes {
   id: string;
   userId: string;
+  type: AddressType;
   firstName: string;
   lastName: string;
   address: string;
@@ -27,6 +30,7 @@ interface AddressCreationAttributes extends Optional<AddressAttributes, 'id'> {}
 class Address extends Model<AddressAttributes, AddressCreationAttributes> implements AddressAttributes {
   public id!: string;
   public userId!: string;
+  public type!: AddressType;
   public firstName!: string;
   public lastName!: string;
   public address!: string;
@@ -58,6 +62,11 @@ Address.init(
         model: User,
         key: 'id',
       },
+    },
+    type: {
+      type: DataTypes.ENUM('shipping', 'billing'),
+      allowNull: false,
+      defaultValue: 'shipping',
     },
     firstName: {
       type: DataTypes.STRING,
@@ -111,6 +120,9 @@ Address.init(
     indexes: [
       {
         fields: ['userId'],
+      },
+      {
+        fields: ['userId', 'type'], // Add composite index for user and address type
       },
     ],
   }

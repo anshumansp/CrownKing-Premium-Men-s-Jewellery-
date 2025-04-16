@@ -14,4 +14,16 @@ export const env = {
   REDIS_URL: process.env.REDIS_URL!,
   CLIENT_URL: process.env.CLIENT_URL!,
   FASTAPI_URL: process.env.FASTAPI_URL!,
+  
+  // Google OAuth settings
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID!,
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET!,
+  
+  // Mail settings for password reset
+  SMTP_HOST: process.env.SMTP_HOST || '',
+  SMTP_PORT: parseInt(process.env.SMTP_PORT || '587', 10),
+  SMTP_USER: process.env.SMTP_USER || '',
+  SMTP_PASS: process.env.SMTP_PASS || '',
+  SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL || 'noreply@crownking.com',
+  SMTP_FROM_NAME: process.env.SMTP_FROM_NAME || 'CrownKing',
 }; 

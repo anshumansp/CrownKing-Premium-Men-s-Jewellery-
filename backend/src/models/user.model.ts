@@ -12,6 +12,7 @@ export interface UserAttributes {
   password: string;
   role: 'user' | 'admin';
   phone?: string;
+  googleId?: string;
   resetPasswordToken?: string;
   resetPasswordExpire?: Date;
   createdAt?: Date;
@@ -29,6 +30,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public password!: string;
   public role!: 'user' | 'admin';
   public phone?: string;
+  public googleId?: string;
   public resetPasswordToken?: string;
   public resetPasswordExpire?: Date;
 
@@ -85,6 +87,10 @@ User.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    googleId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     resetPasswordToken: {
       type: DataTypes.STRING,
     },
@@ -100,12 +106,14 @@ User.init(
     hooks: {
       // Hash password before saving
       beforeCreate: async (user: User) => {
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(user.password, salt);
+        if (user.password) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, salt);
+        }
       },
       // Hash password before updating if changed
       beforeUpdate: async (user: User) => {
-        if (user.changed('password')) {
+        if (user.changed('password') && user.password) {
           const salt = await bcrypt.genSalt(10);
           user.password = await bcrypt.hash(user.password, salt);
         }

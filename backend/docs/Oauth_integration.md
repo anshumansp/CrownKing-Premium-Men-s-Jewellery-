@@ -13,6 +13,10 @@ Here’s your provided Google OAuth Integration content formatted properly as a 
 -  Choose Authorized redirect URIs - for requests from server 
 -  Click on Create ------> Completed Process - You will get client id, client secret - copy them or download the json file
 
+
+
+# Simple Implementation for quick prototype
+
 ```js
 const express = require('express');
 const axios = require('axios');
@@ -79,7 +83,7 @@ app.listen(4000, () => {
 
 ---
 
-## Integration of the Google OAuth in Details:
+## Detailed and Robust Integration of the Google OAuth in Details:
 
 ```js
 /* .env */

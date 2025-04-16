@@ -5,9 +5,27 @@ import apiRoutes from './api';
 import { errorHandler } from './middleware/errorHandler';
 import { logger, httpLogger } from './middleware/logger';
 import { helmetMiddleware, rateLimiterMiddleware, securityHeaders, sanitizeMiddleware } from './middleware/security';
+import passport from './config/passport';
+import session from 'express-session';
+// Skip Redis for now to avoid type errors
+// import RedisStore from 'connect-redis';
+// import { createClient } from 'redis';
 
 // Initialize Express app
 const app = express();
+
+// Initialize Redis client for session store - commented out to avoid type errors
+// const redisClient = createClient({
+//   url: env.REDIS_URL
+// });
+// 
+// redisClient.connect().catch(console.error);
+// 
+// // Redis store for express-session
+// const redisStore = new RedisStore({
+//   client: redisClient,
+//   prefix: 'crownking:sess:',
+// });
 
 // Basic middleware
 app.use(cors({ 
@@ -26,6 +44,25 @@ app.use(securityHeaders);
 app.use(express.json({ limit: '10kb' })); // Limit JSON body size
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(sanitizeMiddleware);
+
+// Session middleware (needed for OAuth)
+app.use(
+  session({
+    // store: redisStore, // Commented out to avoid type errors
+    secret: env.JWT_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    },
+  })
+);
+
+// Initialize passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Logging middleware
 app.use(httpLogger);
