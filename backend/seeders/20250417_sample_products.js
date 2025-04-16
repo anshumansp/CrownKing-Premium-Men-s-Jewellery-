@@ -9,10 +9,7 @@ module.exports = {
         name: 'Royal Gold Crown Ring',
         description: 'A stunning 18K gold ring with a crown design, perfect for those who want to make a statement.',
         price: 499.99,
-        images: JSON.stringify([
-          'https://example.com/images/royal-gold-crown-ring-1.jpg',
-          'https://example.com/images/royal-gold-crown-ring-2.jpg',
-        ]),
+        images: '{https://example.com/images/royal-gold-crown-ring-1.jpg,https://example.com/images/royal-gold-crown-ring-2.jpg}',
         category: 'Rings',
         subCategory: 'Gold',
         specifications: JSON.stringify({
@@ -34,10 +31,7 @@ module.exports = {
         name: 'Silver Lion Pendant',
         description: 'A majestic sterling silver lion pendant that symbolizes strength and courage.',
         price: 199.99,
-        images: JSON.stringify([
-          'https://example.com/images/silver-lion-pendant-1.jpg',
-          'https://example.com/images/silver-lion-pendant-2.jpg',
-        ]),
+        images: '{https://example.com/images/silver-lion-pendant-1.jpg,https://example.com/images/silver-lion-pendant-2.jpg}',
         category: 'Necklaces',
         subCategory: 'Silver',
         specifications: JSON.stringify({
@@ -59,10 +53,7 @@ module.exports = {
         name: 'Diamond Crown Cufflinks',
         description: 'Elegant cufflinks featuring a crown design with small diamond accents.',
         price: 349.99,
-        images: JSON.stringify([
-          'https://example.com/images/diamond-crown-cufflinks-1.jpg',
-          'https://example.com/images/diamond-crown-cufflinks-2.jpg',
-        ]),
+        images: '{https://example.com/images/diamond-crown-cufflinks-1.jpg,https://example.com/images/diamond-crown-cufflinks-2.jpg}',
         category: 'Cufflinks',
         subCategory: 'Diamond',
         specifications: JSON.stringify({
@@ -84,10 +75,7 @@ module.exports = {
         name: 'Titanium Royal Bracelet',
         description: 'A sleek and modern bracelet made from titanium with a royal pattern.',
         price: 129.99,
-        images: JSON.stringify([
-          'https://example.com/images/titanium-royal-bracelet-1.jpg',
-          'https://example.com/images/titanium-royal-bracelet-2.jpg',
-        ]),
+        images: '{https://example.com/images/titanium-royal-bracelet-1.jpg,https://example.com/images/titanium-royal-bracelet-2.jpg}',
         category: 'Bracelets',
         subCategory: 'Titanium',
         specifications: JSON.stringify({
@@ -109,10 +97,7 @@ module.exports = {
         name: 'Platinum Crown Tie Clip',
         description: 'A sophisticated platinum tie clip featuring a subtle crown design.',
         price: 249.99,
-        images: JSON.stringify([
-          'https://example.com/images/platinum-crown-tie-clip-1.jpg',
-          'https://example.com/images/platinum-crown-tie-clip-2.jpg',
-        ]),
+        images: '{https://example.com/images/platinum-crown-tie-clip-1.jpg,https://example.com/images/platinum-crown-tie-clip-2.jpg}',
         category: 'Tie Accessories',
         subCategory: 'Platinum',
         specifications: JSON.stringify({

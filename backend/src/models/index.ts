@@ -9,14 +9,21 @@ import Address from './address.model';
 // Sync models with the database
 export const syncModels = async (force = false): Promise<void> => {
   try {
-    await Promise.all([
-      User.sync({ force }),
-      Product.sync({ force }),
-      Order.sync({ force }),
-      CartItem.sync({ force }),
-      Review.sync({ force }),
-      Address.sync({ force }),
-    ]);
+    // First sync with force to recreate tables if needed
+    if (force) {
+      console.log('Dropping and recreating all tables...');
+      await sequelize.sync({ force: true });
+    } else {
+      // Regular sync
+      await Promise.all([
+        User.sync(),
+        Product.sync(),
+        Order.sync(),
+        CartItem.sync(),
+        Review.sync(),
+        Address.sync(),
+      ]);
+    }
     console.log(`Models synchronized with database ${force ? '(tables recreated)' : ''}`);
   } catch (error) {
     console.error('Error synchronizing models:', error);
