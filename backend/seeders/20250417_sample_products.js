@@ -1,0 +1,138 @@
+'use strict';
+const { v4: uuidv4 } = require('uuid');
+
+module.exports = {
+  async up(queryInterface, Sequelize) {
+    await queryInterface.bulkInsert('products', [
+      {
+        id: uuidv4(),
+        name: 'Royal Gold Crown Ring',
+        description: 'A stunning 18K gold ring with a crown design, perfect for those who want to make a statement.',
+        price: 499.99,
+        images: JSON.stringify([
+          'https://example.com/images/royal-gold-crown-ring-1.jpg',
+          'https://example.com/images/royal-gold-crown-ring-2.jpg',
+        ]),
+        category: 'Rings',
+        subCategory: 'Gold',
+        specifications: JSON.stringify({
+          material: '18K Gold',
+          weight: '8g',
+          dimensions: 'Size 8-12',
+          warranty: '1 year',
+        }),
+        rating: 4.5,
+        reviews: 12,
+        inStock: true,
+        featured: true,
+        discount: 10,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: uuidv4(),
+        name: 'Silver Lion Pendant',
+        description: 'A majestic sterling silver lion pendant that symbolizes strength and courage.',
+        price: 199.99,
+        images: JSON.stringify([
+          'https://example.com/images/silver-lion-pendant-1.jpg',
+          'https://example.com/images/silver-lion-pendant-2.jpg',
+        ]),
+        category: 'Necklaces',
+        subCategory: 'Silver',
+        specifications: JSON.stringify({
+          material: 'Sterling Silver',
+          weight: '15g',
+          dimensions: '2.5 inches',
+          warranty: '1 year',
+        }),
+        rating: 4.7,
+        reviews: 18,
+        inStock: true,
+        featured: false,
+        discount: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: uuidv4(),
+        name: 'Diamond Crown Cufflinks',
+        description: 'Elegant cufflinks featuring a crown design with small diamond accents.',
+        price: 349.99,
+        images: JSON.stringify([
+          'https://example.com/images/diamond-crown-cufflinks-1.jpg',
+          'https://example.com/images/diamond-crown-cufflinks-2.jpg',
+        ]),
+        category: 'Cufflinks',
+        subCategory: 'Diamond',
+        specifications: JSON.stringify({
+          material: 'White Gold with Diamonds',
+          weight: '6g',
+          dimensions: '0.75 inches',
+          warranty: '2 years',
+        }),
+        rating: 5.0,
+        reviews: 8,
+        inStock: true,
+        featured: true,
+        discount: 15,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: uuidv4(),
+        name: 'Titanium Royal Bracelet',
+        description: 'A sleek and modern bracelet made from titanium with a royal pattern.',
+        price: 129.99,
+        images: JSON.stringify([
+          'https://example.com/images/titanium-royal-bracelet-1.jpg',
+          'https://example.com/images/titanium-royal-bracelet-2.jpg',
+        ]),
+        category: 'Bracelets',
+        subCategory: 'Titanium',
+        specifications: JSON.stringify({
+          material: 'Titanium',
+          weight: '20g',
+          dimensions: '8 inches',
+          warranty: '1 year',
+        }),
+        rating: 4.2,
+        reviews: 15,
+        inStock: true,
+        featured: false,
+        discount: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: uuidv4(),
+        name: 'Platinum Crown Tie Clip',
+        description: 'A sophisticated platinum tie clip featuring a subtle crown design.',
+        price: 249.99,
+        images: JSON.stringify([
+          'https://example.com/images/platinum-crown-tie-clip-1.jpg',
+          'https://example.com/images/platinum-crown-tie-clip-2.jpg',
+        ]),
+        category: 'Tie Accessories',
+        subCategory: 'Platinum',
+        specifications: JSON.stringify({
+          material: 'Platinum',
+          weight: '10g',
+          dimensions: '2 inches',
+          warranty: '2 years',
+        }),
+        rating: 4.8,
+        reviews: 9,
+        inStock: true,
+        featured: true,
+        discount: 5,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+  },
+
+  async down(queryInterface, Sequelize) {
+    await queryInterface.bulkDelete('products', null, {});
+  },
+}; 

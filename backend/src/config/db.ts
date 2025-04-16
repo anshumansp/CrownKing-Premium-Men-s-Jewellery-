@@ -2,11 +2,14 @@ import { Sequelize } from 'sequelize';
 import { env } from './env';
 
 // Database connection
-const sequelize = new Sequelize(env.DB_NAME, env.DB_USER, env.DB_PASS, {
+const sequelize = new Sequelize({
+  database: env.DB_NAME,
+  username: env.DB_USER,
+  password: env.DB_PASS,
   host: env.DB_HOST,
   port: env.DB_PORT,
   dialect: 'postgres',
-  logging: env.NODE_ENV === 'development' ? console.log : false,
+  logging: false,
   pool: {
     max: 5,
     min: 0,

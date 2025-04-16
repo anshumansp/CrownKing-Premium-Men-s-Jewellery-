@@ -1,24 +1,25 @@
-import { DataTypes, Model, Optional } from 'sequelize';
+import { Model, DataTypes, Optional } from 'sequelize';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import sequelize from '../config/db';
 
-// User attributes interface
+// User interface based on API contract
 export interface UserAttributes {
   id: string;
   name: string;
   email: string;
   password: string;
   role: 'user' | 'admin';
+  phone?: string;
   resetPasswordToken?: string;
   resetPasswordExpire?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-// User creation attributes interface (for optional fields)
-export interface UserCreationAttributes extends Optional<UserAttributes, 'id'> {}
+// For creating a new User with optional ID
+interface UserCreationAttributes extends Optional<UserAttributes, 'id'> {}
 
 // User model class
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
@@ -27,8 +28,11 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public email!: string;
   public password!: string;
   public role!: 'user' | 'admin';
+  public phone?: string;
   public resetPasswordToken?: string;
   public resetPasswordExpire?: Date;
+
+  // Timestamps
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -77,6 +81,10 @@ User.init(
       type: DataTypes.ENUM('user', 'admin'),
       defaultValue: 'user',
     },
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     resetPasswordToken: {
       type: DataTypes.STRING,
     },
@@ -88,6 +96,7 @@ User.init(
     sequelize,
     modelName: 'User',
     tableName: 'users',
+    timestamps: true,
     hooks: {
       // Hash password before saving
       beforeCreate: async (user: User) => {
