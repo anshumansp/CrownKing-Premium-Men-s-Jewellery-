@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectCartItems, selectCartTotal, clearCart } from '@/redux/slices/cartSlice';
+import { clearCartAsync } from '@/redux/api/cartApi';
+import * as orderService from '@/services/orderService';
+import { isAuthenticated } from '@/utils/auth';
 import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
@@ -184,17 +187,75 @@ export default function Checkout() {
     setLoading(true);
 
     try {
-      // Simulate order processing
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Calculate totals
+      const subtotal = cartTotal;
+      const shipping = cartTotal > 10000 ? 0 : 100;
+      const tax = cartTotal * 0.18;
+      const total = subtotal + shipping + tax;
 
-      // Display success message
-      toast.success('Order placed successfully!');
+      // Create shipping address object
+      const shippingAddress = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
+        country: formData.country
+      };
 
-      // Clear cart
-      dispatch(clearCart());
+      // Create payment details object
+      const paymentDetails = {
+        method: paymentMethod,
+        // For COD, we don't need actual card details
+        cardNumber: 'N/A',
+        expiryDate: 'N/A',
+        cvv: 'N/A',
+        nameOnCard: `${formData.firstName} ${formData.lastName}`
+      };
 
-      // Navigate to confirmation page
-      router.push('/orders/confirmation');
+      // Create order data
+      const orderData = {
+        shippingAddress,
+        paymentDetails,
+        shippingMethod: cartTotal > 10000 ? 'free' : 'standard'
+      };
+
+      // If user is authenticated, create order via API
+      if (isAuthenticated()) {
+        const response = await orderService.createOrder(orderData);
+
+        if (response.success) {
+          // Display success message
+          toast.success('Order placed successfully!');
+
+          // Clear cart in backend
+          await dispatch(clearCartAsync());
+
+          // Clear cart in Redux store
+          dispatch(clearCart());
+
+          // Navigate to confirmation page with order ID
+          router.push(`/orders/confirmation?orderId=${response.data.id}`);
+        } else {
+          throw new Error('Failed to create order');
+        }
+      } else {
+        // For unauthenticated users, just simulate order creation
+        // In a real app, you would create a guest order or prompt for login
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // Display success message
+        toast.success('Order placed successfully!');
+
+        // Clear cart
+        dispatch(clearCart());
+
+        // Navigate to confirmation page
+        router.push('/orders/confirmation');
+      }
     } catch (error) {
       console.error('Error placing order:', error);
       toast.error('Failed to place order. Please try again.');
@@ -247,10 +308,10 @@ export default function Checkout() {
             id={name}
             name={name}
             value={formData[name as keyof typeof formData] as string}
-            onChange={handleInputChange}
+        onChange={handleInputChange}
             onBlur={() => setFormTouched(prev => ({ ...prev, [name]: true }))}
             className={`w-full border ${hasError ? 'border-red-500' : 'border-gray-300'} rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-primary`}
-            required
+        required
           >
             {options.map(option => (
               <option key={option.value} value={option.value}>{option.label}</option>
@@ -259,7 +320,7 @@ export default function Checkout() {
           {hasError && (
             <p className="mt-1 text-sm text-red-500">{formErrors[name]}</p>
           )}
-        </div>
+    </div>
       );
     }
 

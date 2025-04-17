@@ -9,129 +9,60 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
     fetchOrders,
     selectOrders,
+    selectOrdersPagination,
     selectOrdersLoading,
     selectOrdersError
 } from '@/redux/slices/orderSlice';
 import { OrderCardSkeleton } from '@/components/Skeleton';
 import { AppDispatch } from '@/redux/store';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
-// Mock order data for demo purposes
-const mockOrders: Order[] = [
-    {
-        id: 'ORD-001',
-        total: 329.98,
-        status: 'delivered',
-        createdAt: '2023-05-15T10:30:00Z',
-        items: [
-            {
-                id: '1',
-                name: 'Gold Chain Bracelet',
-                price: 249.99,
-                quantity: 1,
-                images: ['/images/products/bracelet-1.jpg'],
-                category: 'bracelets',
-                subCategory: 'gold',
-                specifications: { 'material': '18K Gold' },
-                rating: 4.8,
-                reviews: 24,
-                inStock: true,
-                featured: true,
-                discount: 0
-            },
-            {
-                id: '3',
-                name: 'Silver Cufflinks',
-                price: 79.99,
-                quantity: 1,
-                images: ['/images/products/cufflinks-1.jpg'],
-                category: 'accessories',
-                subCategory: 'cufflinks',
-                specifications: { 'material': 'Sterling Silver' },
-                rating: 4.5,
-                reviews: 12,
-                inStock: true,
-                featured: false,
-                discount: 0
-            }
-        ],
-        shippingAddress: {
-            firstName: 'John',
-            lastName: 'Doe',
-            email: 'john@example.com',
-            phone: '123-456-7890',
-            address: '123 Main St',
-            city: 'New York',
-            state: 'NY',
-            zipCode: '10001',
-            country: 'USA'
-        },
-        paymentDetails: {
-            cardNumber: '**** **** **** 1234',
-            expiryDate: '05/25',
-            cvv: '***',
-            nameOnCard: 'John Doe'
-        }
-    },
-    {
-        id: 'ORD-002',
-        total: 189.99,
-        status: 'processing',
-        createdAt: '2023-06-10T14:45:00Z',
-        items: [
-            {
-                id: '2',
-                name: 'Silver Pendant Necklace',
-                price: 189.99,
-                quantity: 1,
-                images: ['/images/products/necklace-1.jpg'],
-                category: 'necklaces',
-                subCategory: 'silver',
-                specifications: { 'material': 'Sterling Silver' },
-                rating: 4.6,
-                reviews: 18,
-                inStock: true,
-                featured: false,
-                discount: 0
-            }
-        ],
-        shippingAddress: {
-            firstName: 'John',
-            lastName: 'Doe',
-            email: 'john@example.com',
-            phone: '123-456-7890',
-            address: '123 Main St',
-            city: 'New York',
-            state: 'NY',
-            zipCode: '10001',
-            country: 'USA'
-        },
-        paymentDetails: {
-            cardNumber: '**** **** **** 5678',
-            expiryDate: '08/24',
-            cvv: '***',
-            nameOnCard: 'John Doe'
-        }
-    }
-];
+// Define image mappings and fallbacks
+const CATEGORY_IMAGE_MAP = {
+    ring: '/jewe5.jpg',
+    rings: '/jewe5.jpg',
+    bracelet: '/jewe2.webp',
+    bracelets: '/jewe2.webp',
+    necklace: '/jewe1.webp',
+    necklaces: '/jewe1.webp',
+    pendant: '/jewe8.webp',
+    pendants: '/jewe8.webp',
+    watch: '/jewe12.webp',
+    watches: '/jewe12.webp',
+    accessory: '/jewe9.jpg',
+    accessories: '/jewe9.jpg',
+    earring: '/jewe6.avif',
+    earrings: '/jewe6.avif',
+    default: '/jewe1.webp' // Default fallback image
+};
 
 export default function Orders() {
     const { user, isLoading: authLoading, isAuthenticated } = useAuth();
     const dispatch = useDispatch<AppDispatch>();
     const orders = useSelector(selectOrders);
+    const { currentPage, totalPages, limit } = useSelector(selectOrdersPagination);
     const isOrdersLoading = useSelector(selectOrdersLoading);
     const error = useSelector(selectOrdersError);
 
+    const [page, setPage] = useState(1);
+
     useEffect(() => {
-        if (isAuthenticated) {
-            dispatch(fetchOrders());
+        // Only fetch orders if user is authenticated and userId exists
+        if (isAuthenticated && user && user.id) {
+            dispatch(fetchOrders({ page, limit: 5 }));
         }
-    }, [isAuthenticated, dispatch]);
+    }, [isAuthenticated, user, dispatch, page]);
+
+    const handlePageChange = (newPage: number) => {
+        setPage(newPage);
+        window.scrollTo(0, 0);
+    };
 
     if (authLoading) {
         return (
             <div className="container mx-auto px-4 py-8 mt-24">
                 <div className="flex justify-center items-center min-h-[300px]">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+                    <LoadingSpinner />
                 </div>
             </div>
         );
@@ -177,7 +108,9 @@ export default function Orders() {
                         <div className="w-24 h-1 bg-gradient-to-r from-brand-primary to-brand-secondary mx-auto mb-6"></div>
                     </div>
                     <button
-                        onClick={() => dispatch(fetchOrders())}
+                        onClick={() => {
+                            dispatch(fetchOrders({ page, limit: 5 }));
+                        }}
                         className="inline-block bg-brand-primary text-white px-8 py-3 rounded-md hover:bg-brand-blue-light transition-colors duration-300 shadow-sm"
                     >
                         Try Again
@@ -217,11 +150,46 @@ export default function Orders() {
                         </Link>
                     </div>
                 ) : (
+                        <>
                     <div className="space-y-6">
                     {orders.map((order: Order) => (
                         <OrderCard key={order.id} order={order} />
                     ))}
                 </div>
+
+                            {/* Pagination */}
+                            {totalPages > 1 && (
+                                <div className="flex justify-center mt-8">
+                                    <div className="flex space-x-2">
+                                        <button
+                                            onClick={() => handlePageChange(page - 1)}
+                                            disabled={page === 1}
+                                            className={`px-3 py-1 rounded-md ${page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                        >
+                                            Previous
+                                        </button>
+
+                                        {[...Array(totalPages)].map((_, index) => (
+                                            <button
+                                                key={index + 1}
+                                                onClick={() => handlePageChange(index + 1)}
+                                                className={`px-3 py-1 rounded-md ${index + 1 === page ? 'bg-black text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                            >
+                                                {index + 1}
+                                            </button>
+                                        ))}
+
+                                        <button
+                                            onClick={() => handlePageChange(page + 1)}
+                                            disabled={page === totalPages}
+                                            className={`px-3 py-1 rounded-md ${page === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
             )}
         </div>
     );
@@ -258,6 +226,28 @@ function OrderCard({ order }: OrderCardProps) {
     }
     };
 
+    // Get image source with fallback
+    const getImageSrc = (item: any) => {
+        if (item.images && item.images.length > 0 &&
+            typeof item.images[0] === 'string' &&
+            !item.images[0].includes('example.com')) {
+            return item.images[0];
+        }
+
+        // Use category-based fallback
+        if (item.category) {
+            const category = item.category.toLowerCase();
+            for (const [key, value] of Object.entries(CATEGORY_IMAGE_MAP)) {
+                if (category.includes(key)) {
+                    return value;
+                }
+            }
+        }
+
+        // Default fallback
+        return CATEGORY_IMAGE_MAP.default;
+    };
+
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
             <div className="bg-gray-50 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center">
@@ -285,25 +275,17 @@ function OrderCard({ order }: OrderCardProps) {
             </div>
 
             <div className="p-4 divide-y divide-gray-100">
-                {order.items.map(item => (
+                {order.items && order.items.map(item => (
                     <div key={item.id} className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center">
                         <div className="w-16 h-16 bg-gray-100 rounded flex-shrink-0 mr-4">
-                            {item.images && item.images[0] ? (
                                 <div className="relative w-full h-full">
                                     <Image
-                                        src={item.images[0]}
+                                    src={getImageSrc(item)}
                                         alt={item.name}
                                         fill
                                         className="object-cover rounded"
                                     />
-                                </div>
-                            ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                </div>
-                            )}
+                            </div>
                         </div>
                         <div className="flex-grow mt-2 sm:mt-0">
                             <p className="font-medium">{item.name}</p>

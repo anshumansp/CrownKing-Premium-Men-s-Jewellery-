@@ -3,24 +3,41 @@
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authService } from '@/services/authService';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AuthSuccess() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get('token');
+    const { setUser, setIsAuthenticated } = useAuth();
 
     useEffect(() => {
-        if (token) {
-            // Process the OAuth callback
-            authService.processOAuthCallback(token);
+        const processAuth = async () => {
+            if (token) {
+                try {
+                    // Process the OAuth callback and get user data
+                    const userData = await authService.processOAuthCallback(token);
 
-            // Redirect to home page
-            router.push('/');
-        } else {
-            // If no token, redirect to login
-            router.push('/auth/login');
-        }
-    }, [token, router]);
+                    if (userData) {
+                        // Update auth context with the user data
+                        setUser(userData);
+                        setIsAuthenticated(true);
+                    }
+
+                    // Redirect to home page
+                    router.push('/');
+                } catch (error) {
+                    console.error('Error processing OAuth callback:', error);
+                    router.push('/auth/login');
+                }
+            } else {
+                // If no token, redirect to login
+                router.push('/auth/login');
+            }
+        };
+
+        processAuth();
+    }, [token, router, setUser, setIsAuthenticated]);
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4">

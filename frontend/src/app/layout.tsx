@@ -1,12 +1,12 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import { Suspense } from 'react';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { WishlistProvider } from '@/contexts/WishlistContext';
 import { LoadingProvider } from '@/contexts/LoadingContext';
 import { ReduxProvider } from '@/redux/provider';
+import LoadingFallback from '@/components/LoadingFallback';
+import ClientLayout from '@/components/ClientLayout';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -35,13 +35,11 @@ export default function RootLayout({
         <ReduxProvider>
           <AuthProvider>
             <LoadingProvider>
-              <WishlistProvider>
-                <Navbar />
-                <main className="flex-grow">
+              <Suspense fallback={<LoadingFallback />}>
+                <ClientLayout>
                   {children}
-                </main>
-                <Footer />
-              </WishlistProvider>
+                </ClientLayout>
+              </Suspense>
             </LoadingProvider>
           </AuthProvider>
         </ReduxProvider>

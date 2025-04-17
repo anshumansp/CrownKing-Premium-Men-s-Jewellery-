@@ -34,10 +34,26 @@ apiClient.interceptors.response.use(
   (error) => {
     // Handle unauthorized errors (401)
     if (error.response && error.response.status === 401) {
-      // Clear tokens and redirect to login if not already there
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth')) {
-        clearTokens();
-        window.location.href = '/auth/login?session=expired';
+      // Clear tokens but don't redirect automatically
+      // This allows components to handle auth redirects appropriately
+      clearTokens();
+      
+      // Only redirect automatically if not on an auth page and not on a public page
+      if (typeof window !== 'undefined' && 
+          !window.location.pathname.includes('/auth') && 
+          !window.location.pathname.includes('/products') &&
+          !window.location.pathname.includes('/') &&
+          window.location.pathname !== '/') {
+        
+        // Check if we should redirect (avoid redirect loops)
+        const isApiCall = error.config && error.config.url && 
+                         !error.config.url.includes('auth');
+        
+        if (isApiCall) {
+          // Set session expired parameter to show appropriate message
+          window.location.href = '/auth/login?session=expired';
+          return new Promise(() => {}); // Prevent further error handling
+        }
       }
     }
     

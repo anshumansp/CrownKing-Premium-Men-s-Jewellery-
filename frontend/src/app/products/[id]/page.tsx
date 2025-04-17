@@ -86,8 +86,8 @@ interface PageProps {
 }
 
 export default async function ProductPage({ params }: PageProps) {
-    // In Next.js 14+, params in a page component should be treated as an async value
-    const { id } = params;
+    // Fix for Next.js 14+ by properly awaiting params
+    const { id } = await Promise.resolve(params);
     let product: Product | undefined;
 
     try {
@@ -146,7 +146,8 @@ export default async function ProductPage({ params }: PageProps) {
 }
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
-    const id = params.id;
+    // Fix for Next.js 14+ by properly awaiting params
+    const id = (await Promise.resolve(params)).id;
     let product: Product | undefined;
 
     try {

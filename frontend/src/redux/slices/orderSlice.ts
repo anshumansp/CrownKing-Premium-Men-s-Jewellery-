@@ -1,129 +1,14 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Order } from '@/types';
-
-// Mock data for demo (in a real app this would come from API)
-const mockOrders: Order[] = [
-  {
-    id: 'ORD-001',
-    total: 329.98,
-    status: 'delivered',
-    createdAt: '2023-05-15T10:30:00Z',
-    items: [
-      {
-        id: '1',
-        name: 'Gold Chain Bracelet',
-        price: 249.99,
-        quantity: 1,
-        images: ['/images/products/bracelet-1.jpg'],
-        category: 'bracelets',
-        subCategory: 'gold',
-        specifications: { 'material': '18K Gold' },
-        rating: 4.8,
-        reviews: 24,
-        inStock: true,
-        featured: true,
-        discount: 0
-      },
-      {
-        id: '3',
-        name: 'Silver Cufflinks',
-        price: 79.99,
-        quantity: 1,
-        images: ['/images/products/cufflinks-1.jpg'],
-        category: 'accessories',
-        subCategory: 'cufflinks',
-        specifications: { 'material': 'Sterling Silver' },
-        rating: 4.5,
-        reviews: 12,
-        inStock: true,
-        featured: false,
-        discount: 0
-      }
-    ],
-    shippingAddress: {
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john@example.com',
-      phone: '123-456-7890',
-      address: '123 Main St',
-      city: 'New York',
-      state: 'NY',
-      zipCode: '10001',
-      country: 'USA'
-    },
-    paymentDetails: {
-      cardNumber: '**** **** **** 1234',
-      expiryDate: '05/25',
-      cvv: '***',
-      nameOnCard: 'John Doe'
-    }
-  },
-  {
-    id: 'ORD-002',
-    total: 189.99,
-    status: 'processing',
-    createdAt: '2023-06-10T14:45:00Z',
-    items: [
-      {
-        id: '2',
-        name: 'Silver Pendant Necklace',
-        price: 189.99,
-        quantity: 1,
-        images: ['/images/products/necklace-1.jpg'],
-        category: 'necklaces',
-        subCategory: 'silver',
-        specifications: { 'material': 'Sterling Silver' },
-        rating: 4.6,
-        reviews: 18,
-        inStock: true,
-        featured: false,
-        discount: 0
-      }
-    ],
-    shippingAddress: {
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john@example.com',
-      phone: '123-456-7890',
-      address: '123 Main St',
-      city: 'New York',
-      state: 'NY',
-      zipCode: '10001',
-      country: 'USA'
-    },
-    paymentDetails: {
-      cardNumber: '**** **** **** 5678',
-      expiryDate: '08/24',
-      cvv: '***',
-      nameOnCard: 'John Doe'
-    }
-  }
-];
-
-// Mock order tracking data
-const mockTracking: Record<string, any> = {
-  'ORD-001': {
-    status: 'delivered',
-    events: [
-      { status: 'ordered', date: '2023-05-15T10:30:00Z', description: 'Order placed' },
-      { status: 'processing', date: '2023-05-15T14:20:00Z', description: 'Payment confirmed, order processing' },
-      { status: 'shipped', date: '2023-05-16T09:45:00Z', description: 'Package shipped', tracking: 'TRK123456789' },
-      { status: 'out_for_delivery', date: '2023-05-20T08:30:00Z', description: 'Out for delivery' },
-      { status: 'delivered', date: '2023-05-20T14:15:00Z', description: 'Delivered' }
-    ]
-  },
-  'ORD-002': {
-    status: 'processing',
-    events: [
-      { status: 'ordered', date: '2023-06-10T14:45:00Z', description: 'Order placed' },
-      { status: 'processing', date: '2023-06-10T15:30:00Z', description: 'Payment confirmed, order processing' }
-    ]
-  }
-};
+import * as orderService from '@/services/orderService';
 
 // Define types
 interface OrderState {
   orders: Order[];
+  totalOrders: number;
+  totalPages: number;
+  currentPage: number;
+  limit: number;
   currentOrder: Order | null;
   trackingInfo: any | null;
   isLoading: boolean;
@@ -133,6 +18,10 @@ interface OrderState {
 // Initial state
 const initialState: OrderState = {
   orders: [],
+  totalOrders: 0,
+  totalPages: 1,
+  currentPage: 1,
+  limit: 10,
   currentOrder: null,
   trackingInfo: null,
   isLoading: false,
@@ -142,13 +31,13 @@ const initialState: OrderState = {
 // Async thunks for API calls
 export const fetchOrders = createAsyncThunk(
   'orders/fetchOrders',
-  async (_, { rejectWithValue }) => {
+  async ({ page = 1, limit = 10 }: { page?: number; limit?: number } = {}, { rejectWithValue }) => {
     try {
-      // In a real app, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulating API delay
-      return mockOrders;
+      const response = await orderService.getUserOrders(page, limit);
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch orders');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch orders';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -157,17 +46,11 @@ export const fetchOrderById = createAsyncThunk(
   'orders/fetchOrderById',
   async (orderId: string, { rejectWithValue }) => {
     try {
-      // In a real app, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulating API delay
-      
-      const order = mockOrders.find(o => o.id === orderId);
-      if (!order) {
-        throw new Error('Order not found');
-      }
-      
-      return order;
+      const response = await orderService.getOrderById(orderId);
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch order');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch order';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -176,17 +59,12 @@ export const fetchOrderTracking = createAsyncThunk(
   'orders/fetchOrderTracking',
   async (orderId: string, { rejectWithValue }) => {
     try {
-      // In a real app, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulating API delay
-      
-      const tracking = mockTracking[orderId];
-      if (!tracking) {
-        throw new Error('Tracking information not found');
-      }
-      
-      return tracking;
+      // Note: For tracking API, we need to implement this endpoint on the backend
+      // For now, we'll mock this with a placeholder
+      throw new Error('Tracking API not implemented yet');
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch tracking information');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch tracking information';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -195,21 +73,11 @@ export const cancelOrder = createAsyncThunk(
   'orders/cancelOrder',
   async (orderId: string, { rejectWithValue }) => {
     try {
-      // In a real app, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulating API delay
-      
-      const order = mockOrders.find(o => o.id === orderId);
-      if (!order) {
-        throw new Error('Order not found');
-      }
-      
-      if (order.status === 'delivered' || order.status === 'shipped') {
-        throw new Error('Cannot cancel an order that has been shipped or delivered');
-      }
-      
-      return orderId;
+      const response = await orderService.cancelOrder(orderId);
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to cancel order');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to cancel order';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -233,9 +101,13 @@ const orderSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     });
-    builder.addCase(fetchOrders.fulfilled, (state, action: PayloadAction<Order[]>) => {
+    builder.addCase(fetchOrders.fulfilled, (state, action: PayloadAction<orderService.OrdersResponse['data']>) => {
       state.isLoading = false;
-      state.orders = action.payload;
+      state.orders = action.payload.orders;
+      state.totalOrders = action.payload.totalOrders;
+      state.totalPages = action.payload.totalPages;
+      state.currentPage = action.payload.currentPage;
+      state.limit = action.payload.limit;
     });
     builder.addCase(fetchOrders.rejected, (state, action) => {
       state.isLoading = false;
@@ -275,20 +147,18 @@ const orderSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     });
-    builder.addCase(cancelOrder.fulfilled, (state, action: PayloadAction<string>) => {
+    builder.addCase(cancelOrder.fulfilled, (state, action: PayloadAction<{ order: Order }>) => {
       state.isLoading = false;
-      const orderId = action.payload;
+      const updatedOrder = action.payload.order;
       
       // Update order status in orders list
       state.orders = state.orders.map(order => 
-        order.id === orderId 
-          ? { ...order, status: 'cancelled' as 'cancelled' } 
-          : order
+        order.id === updatedOrder.id ? updatedOrder : order
       );
       
       // Update current order if it's the cancelled one
-      if (state.currentOrder && state.currentOrder.id === orderId) {
-        state.currentOrder = { ...state.currentOrder, status: 'cancelled' as 'cancelled' };
+      if (state.currentOrder && state.currentOrder.id === updatedOrder.id) {
+        state.currentOrder = updatedOrder;
       }
     });
     builder.addCase(cancelOrder.rejected, (state, action) => {
@@ -302,6 +172,12 @@ export const { clearOrderError, clearCurrentOrder } = orderSlice.actions;
 
 // Selectors
 export const selectOrders = (state: any) => state?.orders?.orders || [];
+export const selectOrdersPagination = (state: any) => ({
+  totalOrders: state?.orders?.totalOrders || 0,
+  totalPages: state?.orders?.totalPages || 1,
+  currentPage: state?.orders?.currentPage || 1,
+  limit: state?.orders?.limit || 10
+});
 export const selectCurrentOrder = (state: any) => state?.orders?.currentOrder || null;
 export const selectTrackingInfo = (state: any) => state?.orders?.trackingInfo || null;
 export const selectOrdersLoading = (state: any) => state?.orders?.isLoading || false;

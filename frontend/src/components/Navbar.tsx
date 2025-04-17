@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo, lazy, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -10,43 +10,65 @@ import {
     XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
-import WishlistCount from './WishlistCount';
-import CartCount from './CartCount';
 import { useRouter } from 'next/navigation';
 import { useLoading } from '@/contexts/LoadingContext';
-import NavigationButton from './NavigationButton';
 
-export default function Navbar() {
+// Lazy load components that aren't needed immediately
+const WishlistCount = lazy(() => import('./WishlistCount'));
+const CartCount = lazy(() => import('./CartCount'));
+const SearchBar = lazy(() => import('./SearchBar'));
+
+// Preload search component when user hovers over search icon
+const preloadSearchBar = () => {
+    import('./SearchBar');
+};
+
+function NavbarComponent() {
     const router = useRouter();
     const { user, isAuthenticated, logout } = useAuth();
     const [isScrolled, setIsScrolled] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
     const { startLoading } = useLoading();
 
+    // Optimize scroll event handler
     useEffect(() => {
+        let ticking = false;
+
         const handleScroll = () => {
-            setIsScrolled(window.scrollY > 10);
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    setIsScrolled(window.scrollY > 10);
+                    ticking = false;
+                });
+                ticking = true;
+            }
         };
 
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const handleLogout = (e: React.MouseEvent) => {
+    // Memoize event handlers
+    const handleLogout = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
         logout();
         setShowProfileMenu(false);
-    };
+    }, [logout]);
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSearch = useCallback((query: string) => {
         startLoading();
-        router.push('/products');
+        router.push(`/products?search=${encodeURIComponent(query)}`);
         setShowSearch(false);
-        setSearchQuery('');
-    };
+    }, [startLoading, router]);
+
+    const toggleProfileMenu = useCallback(() => {
+        setShowProfileMenu(prev => !prev);
+    }, []);
+
+    const toggleSearch = useCallback(() => {
+        setShowSearch(prev => !prev);
+    }, []);
 
     return (
         <header
@@ -87,23 +109,11 @@ export default function Navbar() {
                 <div className="flex items-center space-x-4">
                     {showSearch ? (
                         <div className="relative flex-1 sm:max-w-xs">
-                            <form onSubmit={handleSearch} className="flex items-center">
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search for products..."
-                                    className="py-2 px-4 pr-10 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                                />
-                                <button
-                                    type="submit"
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                                >
-                                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-500" />
-                                </button>
-                            </form>
+                            <Suspense fallback={<div className="w-48 h-10 bg-gray-200 animate-pulse rounded-md" />}>
+                                <SearchBar onSearch={handleSearch} />
+                            </Suspense>
                             <button
-                                onClick={() => setShowSearch(false)}
+                                onClick={toggleSearch}
                                 className="absolute right-[-40px] top-1/2 transform -translate-y-1/2 p-2"
                             >
                                 <XMarkIcon className="h-5 w-5" />
@@ -113,20 +123,25 @@ export default function Navbar() {
                         <button
                             className="p-2 hover:text-gray-600"
                             aria-label="Search"
-                            onClick={() => setShowSearch(true)}
+                                onClick={toggleSearch}
+                                onMouseEnter={preloadSearchBar}
                         >
                             <MagnifyingGlassIcon className="h-5 w-5" />
                         </button>
                     )}
 
-                    <WishlistCount />
+                    <Suspense fallback={<div className="w-10 h-10" />}>
+                        <WishlistCount />
+                    </Suspense>
 
-                    <CartCount />
+                    <Suspense fallback={<div className="w-10 h-10" />}>
+                        <CartCount />
+                    </Suspense>
 
                     {isAuthenticated ? (
                         <div className="relative">
                             <button
-                                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                                onClick={toggleProfileMenu}
                                 className="flex items-center space-x-1 p-2 hover:text-gray-600"
                                 aria-label="Profile"
                                 aria-expanded={showProfileMenu}
@@ -185,4 +200,8 @@ export default function Navbar() {
             </div>
         </header>
     );
-} 
+}
+
+// Memoize the entire navbar to prevent unnecessary re-renders
+const Navbar = memo(NavbarComponent);
+export default Navbar; 

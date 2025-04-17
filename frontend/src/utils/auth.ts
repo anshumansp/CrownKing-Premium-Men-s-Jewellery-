@@ -1,6 +1,6 @@
 // Token storage keys
-const TOKEN_KEY = 'crown_king_token';
-const USER_KEY = 'crown_king_user';
+const TOKEN_KEY = 'token';
+const USER_KEY = 'user';
 
 /**
  * Save authentication token to localStorage

@@ -120,10 +120,27 @@ export const authService = {
   },
 
   // Process the token from OAuth callback
-  processOAuthCallback(token: string): void {
+  async processOAuthCallback(token: string): Promise<User | null> {
     if (token) {
       localStorage.setItem('token', token);
-      // User data will be fetched in AuthContext
+      
+      try {
+        // Fetch user data with the token
+        const response = await fetch(`${API_URL}/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          localStorage.setItem('user', JSON.stringify(userData));
+          return userData;
+        }
+      } catch (error) {
+        console.error('Error fetching user data after OAuth:', error);
+      }
     }
+    return null;
   },
 }; 

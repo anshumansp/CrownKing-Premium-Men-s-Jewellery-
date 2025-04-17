@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, Suspense } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
@@ -24,20 +24,35 @@ const LoadingContext = createContext<LoadingContextType>({
 // Client-only content wrapper that uses NProgress
 function LoadingProviderContent({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(false);
+    const isLoadingRef = useRef(false);
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Initialize NProgress only on the client side
     useEffect(() => {
         // Dynamic import of NProgress
         import('nprogress').then((module) => {
             NProgress = module.default;
-            NProgress.configure({ showSpinner: false });
+            NProgress.configure({
+                showSpinner: false,
+                minimum: 0.1,
+                speed: 200,
+                trickleSpeed: 50
+            });
         });
     }, []);
 
-    // Manual navigation loading control
+    // Manual navigation loading control with debouncing
     const startLoading = () => {
+        if (isLoadingRef.current) return;
+
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+
+        isLoadingRef.current = true;
         if (NProgress) {
             NProgress.start();
         }
@@ -45,30 +60,34 @@ function LoadingProviderContent({ children }: { children: React.ReactNode }) {
     };
 
     const stopLoading = () => {
-        if (NProgress) {
-            NProgress.done();
+        if (!isLoadingRef.current) return;
+
+        // Small delay to prevent flickering for fast navigations
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
         }
-        setIsLoading(false);
+
+        timeoutRef.current = setTimeout(() => {
+            isLoadingRef.current = false;
+            if (NProgress) {
+                NProgress.done();
+            }
+            setIsLoading(false);
+            timeoutRef.current = null;
+        }, 100);
     };
 
+    // Simplified navigation event handling
     useEffect(() => {
         // Only run on client
         if (typeof window === 'undefined') return;
 
-        // Listen for route changes at the DOM level
-        const handleRouteChangeStart = () => {
-            startLoading();
-        };
-
-        const handleRouteChangeComplete = () => {
-            stopLoading();
-        };
-
-        // Add event listeners for navigation clicks
-        const handleLinkClick = (e: MouseEvent) => {
+        // Single listener for navigation clicks
+        const handleClicks = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
+
+            // Check if this is a navigation link
             const link = target.closest('a');
-            
             if (link && 
                 link.href && 
                 link.href.startsWith(window.location.origin) && 
@@ -76,34 +95,40 @@ function LoadingProviderContent({ children }: { children: React.ReactNode }) {
                 !link.hasAttribute('download') && 
                 !e.metaKey && !e.ctrlKey && !e.shiftKey) {
                 startLoading();
+                return;
             }
-        };
 
-        const handleButtonClick = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
+            // Check if this is a navigation button
             const button = target.closest('button');
-            
             if (button && button.getAttribute('data-navigation-button') === 'true') {
                 startLoading();
+                return;
             }
         };
 
-        document.addEventListener('click', handleLinkClick);
-        document.addEventListener('click', handleButtonClick);
-        window.addEventListener('popstate', handleRouteChangeStart);
+        // Add a single event listener for all clicks
+        document.addEventListener('click', handleClicks, { passive: true });
+        window.addEventListener('popstate', startLoading, { passive: true });
         
         return () => {
-            document.removeEventListener('click', handleLinkClick);
-            document.removeEventListener('click', handleButtonClick);
-            window.removeEventListener('popstate', handleRouteChangeStart);
+            document.removeEventListener('click', handleClicks);
+            window.removeEventListener('popstate', startLoading);
         };
     }, []);
 
     // Track route changes to stop loading
     useEffect(() => {
-        // When pathname or searchParams change, that means navigation has completed
         stopLoading();
     }, [pathname, searchParams]);
+
+    // Cleanup any pending timeouts on unmount
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
 
     return (
         <LoadingContext.Provider value={{ isLoading, startLoading, stopLoading }}>

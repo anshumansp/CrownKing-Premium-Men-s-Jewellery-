@@ -1,11 +1,15 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, AuthResponse } from '@/types';
 import { useLoading } from './LoadingContext';
+import { saveToken, saveUser, getToken, getUser, clearTokens } from '@/utils/auth';
 
 const API_URL = process.env.API_URL || 'http://localhost:5000/api';
+
+// Cache settings
+const AUTH_CACHE_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 interface AuthContextType {
     user: User | null;
@@ -17,6 +21,8 @@ interface AuthContextType {
     resetPassword: (token: string, password: string) => Promise<void>;
     updateProfile: (userData: Partial<User>) => Promise<void>;
     isAuthenticated: boolean;
+    setUser: (user: User | null) => void;
+    setIsAuthenticated: (isAuthenticated: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,42 +33,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const router = useRouter();
     const { startLoading } = useLoading();
+    const lastAuthCheck = useRef<number>(0);
 
-    // Check if user is already logged in
-    useEffect(() => {
-        const checkAuthStatus = async () => {
-            try {
-                const token = localStorage.getItem('token');
+    // Optimized auth status check with caching
+    const checkAuthStatus = useCallback(async (force = false) => {
+        try {
+            const token = getToken();
+            const cachedUser = getUser();
+            const now = Date.now();
 
-                if (!token) {
-                    setIsLoading(false);
-                    return;
-                }
-
-                const response = await fetch(`${API_URL}/auth/me`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-
-                if (response.ok) {
-                    const userData = await response.json();
-                    setUser(userData);
-                    setIsAuthenticated(true);
-                } else {
-                    // Token is invalid or expired
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                }
-            } catch (error) {
-                console.error('Authentication check failed:', error);
-            } finally {
+            // If no token, not authenticated
+            if (!token) {
+                setIsAuthenticated(false);
+                setUser(null);
                 setIsLoading(false);
+                return false;
             }
-        };
 
-        checkAuthStatus();
+            // Use cached user if valid and not forcing refresh
+            if (
+                !force &&
+                cachedUser &&
+                lastAuthCheck.current > 0 &&
+                now - lastAuthCheck.current < AUTH_CACHE_TIME
+            ) {
+                setUser(cachedUser);
+                setIsAuthenticated(true);
+                setIsLoading(false);
+                return true;
+            }
+
+            // Fetch fresh user data
+            const response = await fetch(`${API_URL}/auth/me`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (response.ok) {
+                const userData = await response.json();
+                setUser(userData);
+                setIsAuthenticated(true);
+                saveUser(userData);
+                lastAuthCheck.current = now;
+                setIsLoading(false);
+                return true;
+            } else {
+                // Token is invalid or expired
+                clearTokens();
+                setUser(null);
+                setIsAuthenticated(false);
+                setIsLoading(false);
+                return false;
+            }
+        } catch (error) {
+            console.error('Authentication check failed:', error);
+            setIsLoading(false);
+            return false;
+        }
     }, []);
+
+    // Check auth status on initial load
+    useEffect(() => {
+        checkAuthStatus();
+    }, [checkAuthStatus]);
 
     const login = async (email: string, password: string) => {
         setIsLoading(true);
@@ -81,10 +115,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             const data: AuthResponse = await response.json();
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
+            saveToken(data.token);
+            saveUser(data.user);
             setUser(data.user);
             setIsAuthenticated(true);
+            lastAuthCheck.current = Date.now();
             return data;
         } catch (error) {
             if (error instanceof Error) {
@@ -113,10 +148,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             const data: AuthResponse = await response.json();
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
+            saveToken(data.token);
+            saveUser(data.user);
             setUser(data.user);
             setIsAuthenticated(true);
+            lastAuthCheck.current = Date.now();
             return data;
         } catch (error) {
             if (error instanceof Error) {
@@ -128,14 +164,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+    const logout = useCallback(() => {
+        clearTokens();
         setUser(null);
         setIsAuthenticated(false);
+        lastAuthCheck.current = 0;
         startLoading(); // Start loading before navigation
         router.push('/auth/login');
-    };
+    }, [router, startLoading]);
 
     const forgotPassword = async (email: string) => {
         try {
@@ -213,6 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Update local storage and state
             localStorage.setItem('user', JSON.stringify(updatedUser));
             setUser(updatedUser);
+            lastAuthCheck.current = Date.now();
 
             return updatedUser;
         } catch (error) {
@@ -223,20 +260,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    // Memoized context value to prevent unnecessary renders
+    const contextValue = React.useMemo(() => ({
+        user,
+        isLoading,
+        login,
+        register,
+        logout,
+        forgotPassword,
+        resetPassword,
+        updateProfile,
+        isAuthenticated,
+        setUser: (newUser: User | null) => {
+            setUser(newUser);
+            if (newUser) {
+                saveUser(newUser);
+                lastAuthCheck.current = Date.now();
+            }
+        },
+        setIsAuthenticated,
+    }), [
+        user,
+        isLoading,
+        login,
+        register,
+        logout,
+        forgotPassword,
+        resetPassword,
+        updateProfile,
+        isAuthenticated,
+    ]);
+
     return (
-        <AuthContext.Provider
-            value={{
-                user,
-                isLoading,
-                login,
-                register,
-                logout,
-                forgotPassword,
-                resetPassword,
-                updateProfile,
-                isAuthenticated,
-            }}
-        >
+        <AuthContext.Provider value={contextValue}>
             {children}
         </AuthContext.Provider>
     );
