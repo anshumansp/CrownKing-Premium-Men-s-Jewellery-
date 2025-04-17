@@ -43,8 +43,35 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   role: 'user' | 'admin';
   createdAt: string;
+}
+
+export interface Address {
+  id: string;
+  userId: string;
+  type: 'shipping' | 'billing';
+  firstName: string;
+  lastName: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  phone: string;
+  email?: string;
+  isDefault: boolean;
+}
+
+export interface UserProfile extends User {
+  addresses?: Address[];
+}
+
+export interface AuthResponse {
+  success: boolean;
+  token: string;
+  user: User;
 }
 
 export interface Order {

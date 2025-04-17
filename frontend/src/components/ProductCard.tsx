@@ -3,22 +3,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Product } from '@/types';
-import { HeartIcon } from '@heroicons/react/24/outline';
-import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
-import { useState } from 'react';
+import WishlistButton from './WishlistButton';
 
 interface ProductCardProps {
     product: Product;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-    const [isWishlisted, setIsWishlisted] = useState(false);
-
-    const handleWishlist = (e: React.MouseEvent) => {
-        e.preventDefault();
-        setIsWishlisted(!isWishlisted);
-    };
-
     const formatPrice = (price: number) => {
         return '₹' + price.toLocaleString('en-IN');
     };
@@ -44,16 +35,9 @@ export default function ProductCard({ product }: ProductCardProps) {
                             {product.discount}% OFF
                         </div>
                     )}
-                    <button
-                        onClick={handleWishlist}
-                        className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 hover:bg-white transition-colors"
-                    >
-                        {isWishlisted ? (
-                            <HeartIconSolid className="h-5 w-5 text-red-500" />
-                        ) : (
-                            <HeartIcon className="h-5 w-5 text-gray-600" />
-                        )}
-                    </button>
+                    <div className="absolute top-2 right-2">
+                        <WishlistButton product={product} mini iconSize={20} />
+                    </div>
                 </Link>
             </div>
 

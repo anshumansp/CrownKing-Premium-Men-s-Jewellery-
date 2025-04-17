@@ -3,18 +3,16 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { HeartIcon } from '@heroicons/react/24/outline';
-import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { StarIcon, ShoppingCartIcon, TruckIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { Product } from '@/types';
 import ProductCard from '@/components/ProductCard';
+import WishlistButton from '@/components/WishlistButton';
 
 interface ProductClientProps {
     product: Product;
 }
 
 export function ProductClient({ product }: ProductClientProps) {
-    const [isWishlisted, setIsWishlisted] = useState(false);
     const [quantity, setQuantity] = useState(1);
     const [activeTab, setActiveTab] = useState('description');
 
@@ -26,10 +24,6 @@ export function ProductClient({ product }: ProductClientProps) {
         if (discount <= 0) return price;
         const discountAmount = (price * discount) / 100;
         return Math.round(price - discountAmount);
-    };
-
-    const handleWishlist = () => {
-        setIsWishlisted(!isWishlisted);
     };
 
     const increaseQuantity = () => {
@@ -128,16 +122,10 @@ export function ProductClient({ product }: ProductClientProps) {
                             </button>
                         </div>
                         <div>
-                            <button
-                                onClick={handleWishlist}
-                                className="p-3 border border-gray-300 hover:border-brand-primary transition-colors"
-                            >
-                                {isWishlisted ? (
-                                    <HeartIconSolid className="h-6 w-6 text-red-500" />
-                                ) : (
-                                    <HeartIcon className="h-6 w-6 text-gray-600" />
-                                )}
-                            </button>
+                            <WishlistButton
+                                product={product}
+                                iconSize={24}
+                            />
                         </div>
                     </div>
 

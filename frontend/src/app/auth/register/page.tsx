@@ -3,9 +3,12 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { authService } from '@/services/authService';
 
 export default function Register() {
   const router = useRouter();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -13,6 +16,7 @@ export default function Register() {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,36 +28,19 @@ export default function Register() {
       return;
     }
 
+    setIsLoading(true);
     try {
-      // For demo purposes, let's just redirect
-      router.push('/auth/login');
-
-      // In a real application, you would use this:
-      /*
-      const response = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: formData.fullName,
-          email: formData.email,
-          password: formData.password
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      // Redirect to login page
-      router.push('/auth/login');
-      */
+      await register(formData.fullName, formData.email, formData.password);
+      router.push('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = authService.getGoogleAuthUrl();
   };
 
   return (
@@ -133,9 +120,10 @@ export default function Register() {
 
           <button
             type="submit"
-            className="w-full bg-black text-white py-3 rounded-md font-medium hover:bg-gray-800 transition-colors mb-4"
+            disabled={isLoading}
+            className="w-full bg-black text-white py-3 rounded-md font-medium hover:bg-gray-800 transition-colors mb-4 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            CREATE ACCOUNT
+            {isLoading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
           </button>
 
           <p className="text-xs text-gray-500 text-center mb-6">
@@ -149,7 +137,10 @@ export default function Register() {
           <div className="border-t border-gray-300 flex-grow ml-3"></div>
         </div>
 
-        <button className="w-full border border-gray-300 py-3 rounded-md font-medium hover:bg-gray-50 transition-colors flex items-center justify-center">
+        <button
+          className="w-full border border-gray-300 py-3 rounded-md font-medium hover:bg-gray-50 transition-colors flex items-center justify-center"
+          onClick={handleGoogleLogin}
+        >
           <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />

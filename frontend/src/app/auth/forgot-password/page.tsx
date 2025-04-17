@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { authService } from '@/services/authService';
 
 export default function ForgotPassword() {
     const router = useRouter();
@@ -10,39 +11,23 @@ export default function ForgotPassword() {
     const [message, setMessage] = useState('');
     const [isError, setIsError] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage('');
         setIsError(false);
+        setIsLoading(true);
 
         try {
-            // For demo purposes, let's simulate a successful password reset
+            const response = await authService.forgotPassword(email);
             setIsSubmitted(true);
-            setMessage('Password reset instructions have been sent to your email');
-
-            // In a real application, you would use this:
-            /*
-            const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to send reset instructions');
-            }
-
-            setIsSubmitted(true);
-            setMessage(data.message || 'Password reset instructions have been sent to your email');
-            */
+            setMessage(response.message || 'Password reset instructions have been sent to your email');
         } catch (err) {
             setIsError(true);
             setMessage(err instanceof Error ? err.message : 'Failed to send reset instructions');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -79,9 +64,10 @@ export default function ForgotPassword() {
 
                         <button
                             type="submit"
-                            className="w-full bg-black text-white py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
+                            disabled={isLoading}
+                            className="w-full bg-black text-white py-3 rounded-md font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
-                            RESET PASSWORD
+                            {isLoading ? 'SENDING...' : 'RESET PASSWORD'}
                         </button>
                     </form>
                 ) : (
