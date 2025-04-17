@@ -12,6 +12,7 @@ import { addItem } from '@/redux/slices/cartSlice';
 import { addItemAsync } from '@/redux/api/cartApi';
 import { toast } from 'react-hot-toast';
 import { AppDispatch } from '@/redux/store';
+import { useRouter } from 'next/navigation';
 
 interface ProductClientProps {
     product: Product;
@@ -42,6 +43,7 @@ export function ProductClient({ product }: ProductClientProps) {
     const dispatch = useDispatch<AppDispatch>();
     const [loading, setLoading] = useState(false);
     const [addedToCart, setAddedToCart] = useState(false);
+    const router = useRouter();
 
     // Reset addedToCart state after 3 seconds
     useEffect(() => {
@@ -103,8 +105,18 @@ export function ProductClient({ product }: ProductClientProps) {
                         // so we don't need to show an error for the backend sync
                     });
 
-                // Show success message with toast
-                toast.success(`${product.name} added to cart!`);
+                // Show success message with toast and option to view cart
+                toast.success(
+                    <div className="flex flex-col">
+                        <span>{product.name} added to cart!</span>
+                        <button
+                            onClick={() => router.push('/cart')}
+                            className="text-xs underline mt-1 text-left"
+                        >
+                            View Cart
+                        </button>
+                    </div>
+                );
 
                 // Update button state
                 setAddedToCart(true);

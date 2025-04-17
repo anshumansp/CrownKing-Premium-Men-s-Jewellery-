@@ -1,3 +1,634 @@
+The runtime error `ModuleNotFoundError: No module named 'langgraph'` indicates that the `langgraph` module is not installed in your Python environment. This is likely because the required package is missing or not properly installed. Based on the provided context, you're building a LangGraph-based AI chatbot with FastAPI, and the error occurs when running the code. Let's resolve this step-by-step.
+
+### Steps to Fix the Error
+
+1. **Verify Python Environment**:
+   Ensure you're using the correct Python environment where dependencies should be installed. If you're using a virtual environment, activate it:
+   ```bash
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+2. **Install the `langgraph` Package**:
+   The `langgraph` package is part of the LangChain ecosystem but is distributed separately. Install it using pip:
+   ```bash
+   pip install langgraph
+   ```
+
+   If you want to ensure compatibility with other LangChain packages, you can also install related dependencies:
+   ```bash
+   pip install langgraph langchain-core langchain-community
+   ```
+
+3. **Check Installed Packages**:
+   Verify that `langgraph` is installed by running:
+   ```bash
+   pip list | grep langgraph
+   ```
+   You should see an output like:
+   ```
+   langgraph          X.Y.Z
+   ```
+
+4. **Update `requirements.txt` (if applicable)**:
+   If you're using a `requirements.txt` file to manage dependencies, add `langgraph` to it:
+   ```
+   langgraph>=0.2.60
+   langchain-core>=0.3.29
+   langchain-community>=0.3.14
+   fastapi>=0.115.6
+   uvicorn>=0.34.0
+   transformers>=4.44.0
+   torch>=2.4.0
+   python-dotenv>=1.0.1
+   openai>=1.46.0
+   groq>=0.11.0
+   google-generativeai>=0.8.2
+   ```
+   Then install all dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+5. **Check Python Version**:
+   Ensure you're using a compatible Python version (3.8 or higher, as recommended in the provided context). Check your Python version:
+   ```bash
+   python --version
+   ```
+   If necessary, upgrade Python or use a compatible version in your virtual environment.
+
+6. **Fix Code Imports**:
+   The provided code uses `from langgraph.graph import Graph`, which is correct for the `langgraph` package. However, ensure there are no typos or incorrect imports. The relevant import line should be:
+   ```python
+   from langgraph.graph import Graph
+   ```
+   If you see imports like `from langgraph import Graph` or other variations, update them to match the correct module structure.
+
+7. **Handle Missing Dependencies**:
+   The error might cascade from other missing dependencies. The provided code also requires `fastapi`, `transformers`, `torch`, `openai`, `groq`, `google-generativeai`, and `python-dotenv`. Install them if not already done:
+   ```bash
+   pip install fastapi uvicorn transformers torch openai groq google-generativeai python-dotenv
+   ```
+
+8. **Test the Code**:
+   After installing `langgraph`, run your script again:
+   ```bash
+   python your_script.py
+   ```
+   If other errors appear, they may indicate additional missing dependencies or configuration issues (e.g., missing API keys in `.env`).
+
+### Additional Notes
+- **Poetry (Optional)**:
+  If you're using Poetry as mentioned in the LangGraph deployment article, install `langgraph` via:
+  ```bash
+  poetry add langgraph
+  ```
+  Update `pyproject.toml` to include:
+  ```toml
+  [tool.poetry.dependencies]
+  langgraph = "^0.2.60"
+  ```
+  Then run:
+  ```bash
+  poetry install
+  ```
+
+- **Environment Variables**:
+  Ensure your `.env` file is correctly set up with required keys (e.g., `OPENAI_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`) as specified in the code. Example:
+  ```env
+  LLM_TYPE=huggingface
+  HUGGINGFACE_MODEL=mistralai/Mistral-7B-Instruct-v0.1
+  OPENAI_API_KEY=your_openai_key
+  GROQ_API_KEY=your_groq_key
+  GEMINI_API_KEY=your_gemini_key
+  DOCUMENTS_DIR=./documents
+  ```
+
+- **GPU Support for Hugging Face**:
+  If using Hugging Face models (e.g., Mistral-7B), ensure `torch` is installed with CUDA support for GPU acceleration (if available):
+  ```bash
+  pip install torch --index-url https://download.pytorch.org/whl/cu118
+  ```
+
+- **Debugging Further Errors**:
+  If installing `langgraph` resolves the current error but new errors appear, check for:
+  - Missing API keys in `.env`.
+  - Incorrect `LLM_TYPE` in `.env` (must be `huggingface`, `openai`, `groq`, or `gemini`).
+  - Document directory (`DOCUMENTS_DIR`) not existing or empty.
+
+### Updated Code Snippet
+Here’s a corrected portion of the code ensuring proper imports and dependency handling:
+```python
+import os
+import glob
+import torch
+from abc import ABC, abstractmethod
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from dotenv import load_dotenv
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from langgraph.graph import Graph  # Correct import
+from langchain_core.language_models import BaseLanguageModel
+import openai
+from groq import Groq
+import google.generativeai as genai
+
+# Load environment variables
+load_dotenv()
+
+# Define LLM Interface
+class BaseLLM(ABC):
+    @abstractmethod
+    def generate(self, query: str) -> str:
+        pass
+
+# Rest of the code remains unchanged
+```
+
+### Verification
+After applying the fix:
+1. Run `pip list` to confirm `langgraph` is installed.
+2. Execute the script and check for any new errors.
+3. If the script runs successfully, test the `/chat` endpoint using `curl` or Postman:
+   ```bash
+   curl -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d '{"query": "What are the latest men's fashion trends?"}'
+   ```
+
+### Potential Follow-Up Issues
+- **ImportError for Other Modules**: If you encounter errors like `ModuleNotFoundError: No module named 'transformers'`, install the missing package (e.g., `pip install transformers`).
+- **RuntimeError for GPU**: If using Hugging Face models and GPU is unavailable, ensure the model runs on CPU by setting `device="cpu"`.
+- **API Key Errors**: Ensure all required API keys are valid and correctly set in `.env`.
+
+### Conclusion
+Installing the `langgraph` package via `pip install langgraph` should resolve the `ModuleNotFoundError`. Ensure all other dependencies are installed and the `.env` file is correctly configured. If further errors occur, share the new traceback for targeted assistance. This fix aligns with the project's goal of building a scalable, CAG-based chatbot for the CrownKing e-commerce platform.
+
+
+
+## Code:
+
+```
+import os
+import glob
+import torch
+from abc import ABC, abstractmethod
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from dotenv import load_dotenv
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from langgraph.graph import Graph
+from langchain_core.language_models import BaseLanguageModel
+import openai
+from groq import Groq
+import google.generativeai as genai
+
+# Load environment variables
+load_dotenv()
+
+# Define LLM Interface
+class BaseLLM(ABC):
+    @abstractmethod
+    def generate(self, query: str) -> str:
+        pass
+
+# HuggingFace LLM with CAG
+class HuggingFaceLLM(BaseLLM):
+    def __init__(self, model_name: str, context: str):
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModelForCausalLM.from_pretrained(model_name).to("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.system_prompt = f"""
+<|system|>
+You are an assistant who provides concise factual answers.
+<|user|>
+Context:
+{context}
+Question:
+""".strip()
+        # Compute initial past_key_values for system_prompt
+        with torch.no_grad():
+            inputs = self.tokenizer(self.system_prompt, return_tensors="pt").to(self.device)
+            outputs = self.model(**inputs, use_cache=True)
+            self.past_key_values_sys = outputs.past_key_values
+
+    def generate(self, query: str, max_new_tokens: int = 50) -> str:
+        input_ids = self.tokenizer(query + "\n", return_tensors="pt").input_ids.to(self.device)
+        past_key_values = self.past_key_values_sys
+        generated_ids = []
+        with torch.no_grad():
+            for _ in range(max_new_tokens):
+                outputs = self.model(input_ids=input_ids, past_key_values=past_key_values, use_cache=True)
+                next_token_logits = outputs.logits[:, -1, :]
+                next_token = torch.argmax(next_token_logits, dim=-1).unsqueeze(0)
+                generated_ids.append(next_token.item())
+                past_key_values = outputs.past_key_values
+                input_ids = next_token
+                if self.model.config.eos_token_id is not None and next_token.item() == self.model.config.eos_token_id:
+                    break
+        return self.tokenizer.decode(generated_ids, skip_special_tokens=True)
+
+# OpenAI LLM
+class OpenAILLM(BaseLLM):
+    def __init__(self, api_key: str, context: str):
+        self.api_key = api_key
+        self.context = context
+        openai.api_key = api_key
+
+    def generate(self, query: str) -> str:
+        prompt = f"Context: {self.context}\nQuestion: {query}\nAnswer:"
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=prompt,
+            max_tokens=50,
+            temperature=0.7
+        )
+        return response['choices'][0]['text'].strip()
+
+# Groq LLM
+class GroqLLM(BaseLLM):
+    def __init__(self, api_key: str, context: str):
+        self.client = Groq(api_key=api_key)
+        self.context = context
+
+    def generate(self, query: str) -> str:
+        prompt = f"Context: {self.context}\nQuestion: {query}\nAnswer:"
+        response = self.client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=50
+        )
+        return response.choices[0].message.content.strip()
+
+# Gemini LLM
+class GeminiLLM(BaseLLM):
+    def __init__(self, api_key: str, context: str):
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel('gemini-pro')
+        self.context = context
+
+    def generate(self, query: str) -> str:
+        prompt = f"Context: {self.context}\nQuestion: {query}\nAnswer:"
+        response = self.model.generate_content(prompt)
+        return response.text.strip()
+
+# Load Documents
+def load_documents(directory: str) -> str:
+    context = ""
+    for file in glob.glob(f"{directory}/*.txt"):
+        with open(file, "r") as f:
+            context += f.read() + "\n"
+    return context.strip()
+
+# Initialize LLM
+llm_type = os.getenv("LLM_TYPE", "huggingface")
+context = load_documents(os.getenv("DOCUMENTS_DIR", "./documents"))
+if llm_type == "huggingface":
+    llm = HuggingFaceLLM(model_name=os.getenv("HUGGINGFACE_MODEL", "mistralai/Mistral-7B-Instruct-v0.1"), context=context)
+elif llm_type == "openai":
+    llm = OpenAILLM(api_key=os.getenv("OPENAI_API_KEY"), context=context)
+elif llm_type == "groq":
+    llm = GroqLLM(api_key=os.getenv("GROQ_API_KEY"), context=context)
+elif llm_type == "gemini":
+    llm = GeminiLLM(api_key=os.getenv("GEMINI_API_KEY"), context=context)
+else:
+    raise ValueError("Invalid LLM_TYPE")
+
+# Custom LLM for LangGraph
+class CustomLLM(BaseLanguageModel):
+    def __init__(self, llm: BaseLLM):
+        self.llm = llm
+
+    @property
+    def _llm_type(self):
+        return "custom"
+
+    def _call(self, prompt: str) -> str:
+        return self.llm.generate(prompt)
+
+custom_llm = CustomLLM(llm)
+
+# LangGraph Setup
+graph = Graph()
+llm_node = LLMNode(llm=custom_llm)
+graph.add_node(llm_node)
+graph.connect_input("query", llm_node)
+graph.connect_output(llm_node)
+
+# FastAPI App
+app = FastAPI()
+
+class ChatRequest(BaseModel):
+    query: str
+
+@app.post("/chat")
+async def chat(request: ChatRequest):
+    try:
+        result = await graph.ainvoke({"query": request.query})
+        return {"answer": result["text"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+```
+
+### Key Points
+- Research suggests that Cache-Augmented Generation (CAG) can significantly reduce response times for frequently asked questions by preloading knowledge, making it ideal for an e-commerce chatbot.
+- It seems likely that integrating LangGraph with FastAPI will provide a modular and scalable framework for handling diverse query types like recommendations and customer support.
+- The evidence leans toward using a flexible LLM interface to switch between providers (e.g., Hugging Face, OpenAI) via `.env` configurations, ensuring adaptability.
+
+### Overview
+To create a LangGraph-based AI chatbot for your e-commerce platform, you can build a FastAPI application that uses Cache-Augmented Generation (CAG) to preload product catalogs, FAQs, and fashion tips from a directory. This chatbot will handle recommendations, customer support, product finding, and men's fashion questions, integrating seamlessly with other backend systems. By configuring API keys in a `.env` file, you can switch between AI models like Groq’s Llama, OpenAI, or Google Gemini, making it versatile and future-proof.
+
+### Setting Up the Project
+Start by creating a FastAPI project with a modular structure. Install dependencies like `fastapi`, `langgraph`, and `transformers`, and set up a `.env` file to specify the AI model and document directory. This ensures quick setup and easy model switching.
+
+### Building the Chatbot
+Use LangGraph to define a simple graph with a node that processes user queries using a custom LLM wrapper. For local models (e.g., Mistral-7B via Hugging Face), CAG preloads document context to speed up responses. For API-based models (e.g., OpenAI), include context in each request. Load documents from a directory at startup to provide product and support information.
+
+### Ensuring Flexibility and Scalability
+A flexible LLM interface allows switching models by changing the `.env` file. FastAPI endpoints expose the chatbot for other systems, and Docker ensures easy deployment on platforms like Render. This setup supports scalability and future enhancements like dynamic caching.
+
+---
+
+```python
+import os
+import glob
+import torch
+from abc import ABC, abstractmethod
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from dotenv import load_dotenv
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from langgraph.graph import Graph
+from langchain_core.language_models import BaseLanguageModel
+import openai
+from groq import Groq
+import google.generativeai as genai
+
+# Load environment variables
+load_dotenv()
+
+# Define LLM Interface
+class BaseLLM(ABC):
+    @abstractmethod
+    def generate(self, query: str) -> str:
+        pass
+
+# HuggingFace LLM with CAG
+class HuggingFaceLLM(BaseLLM):
+    def __init__(self, model_name: str, context: str):
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModelForCausalLM.from_pretrained(model_name).to("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.system_prompt = f"""
+<|system|>
+You are an assistant who provides concise factual answers.
+<|user|>
+Context:
+{context}
+Question:
+""".strip()
+        # Compute initial past_key_values for system_prompt
+        with torch.no_grad():
+            inputs = self.tokenizer(self.system_prompt, return_tensors="pt").to(self.device)
+            outputs = self.model(**inputs, use_cache=True)
+            self.past_key_values_sys = outputs.past_key_values
+
+    def generate(self, query: str, max_new_tokens: int = 50) -> str:
+        input_ids = self.tokenizer(query + "\n", return_tensors="pt").input_ids.to(self.device)
+        past_key_values = self.past_key_values_sys
+        generated_ids = []
+        with torch.no_grad():
+            for _ in range(max_new_tokens):
+                outputs = self.model(input_ids=input_ids, past_key_values=past_key_values, use_cache=True)
+                next_token_logits = outputs.logits[:, -1, :]
+                next_token = torch.argmax(next_token_logits, dim=-1).unsqueeze(0)
+                generated_ids.append(next_token.item())
+                past_key_values = outputs.past_key_values
+                input_ids = next_token
+                if self.model.config.eos_token_id is not None and next_token.item() == self.model.config.eos_token_id:
+                    break
+        return self.tokenizer.decode(generated_ids, skip_special_tokens=True)
+
+# OpenAI LLM
+class OpenAILLM(BaseLLM):
+    def __init__(self, api_key: str, context: str):
+        self.api_key = api_key
+        self.context = context
+        openai.api_key = api_key
+
+    def generate(self, query: str) -> str:
+        prompt = f"Context: {self.context}\nQuestion: {query}\nAnswer:"
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=prompt,
+            max_tokens=50,
+            temperature=0.7
+        )
+        return response['choices'][0]['text'].strip()
+
+# Groq LLM
+class GroqLLM(BaseLLM):
+    def __init__(self, api_key: str, context: str):
+        self.client = Groq(api_key=api_key)
+        self.context = context
+
+    def generate(self, query: str) -> str:
+        prompt = f"Context: {self.context}\nQuestion: {query}\nAnswer:"
+        response = self.client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=50
+        )
+        return response.choices[0].message.content.strip()
+
+# Gemini LLM
+class GeminiLLM(BaseLLM):
+    def __init__(self, api_key: str, context: str):
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel('gemini-pro')
+        self.context = context
+
+    def generate(self, query: str) -> str:
+        prompt = f"Context: {self.context}\nQuestion: {query}\nAnswer:"
+        response = self.model.generate_content(prompt)
+        return response.text.strip()
+
+# Load Documents
+def load_documents(directory: str) -> str:
+    context = ""
+    for file in glob.glob(f"{directory}/*.txt"):
+        with open(file, "r") as f:
+            context += f.read() + "\n"
+    return context.strip()
+
+# Initialize LLM
+llm_type = os.getenv("LLM_TYPE", "huggingface")
+context = load_documents(os.getenv("DOCUMENTS_DIR", "./documents"))
+if llm_type == "huggingface":
+    llm = HuggingFaceLLM(model_name=os.getenv("HUGGINGFACE_MODEL", "mistralai/Mistral-7B-Instruct-v0.1"), context=context)
+elif llm_type == "openai":
+    llm = OpenAILLM(api_key=os.getenv("OPENAI_API_KEY"), context=context)
+elif llm_type == "groq":
+    llm = GroqLLM(api_key=os.getenv("GROQ_API_KEY"), context=context)
+elif llm_type == "gemini":
+    llm = GeminiLLM(api_key=os.getenv("GEMINI_API_KEY"), context=context)
+else:
+    raise ValueError("Invalid LLM_TYPE")
+
+# Custom LLM for LangGraph
+class CustomLLM(BaseLanguageModel):
+    def __init__(self, llm: BaseLLM):
+        self.llm = llm
+
+    @property
+    def _llm_type(self):
+        return "custom"
+
+    def _call(self, prompt: str) -> str:
+        return self.llm.generate(prompt)
+
+custom_llm = CustomLLM(llm)
+
+# LangGraph Setup
+graph = Graph()
+llm_node = LLMNode(llm=custom_llm)
+graph.add_node(llm_node)
+graph.connect_input("query", llm_node)
+graph.connect_output(llm_node)
+
+# FastAPI App
+app = FastAPI()
+
+class ChatRequest(BaseModel):
+    query: str
+
+@app.post("/chat")
+async def chat(request: ChatRequest):
+    try:
+        result = await graph.ainvoke({"query": request.query})
+        return {"answer": result["text"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+```
+
+### Comprehensive Plan for Building a LangGraph-Based AI Chatbot with Cache-Augmented Generation (CAG) in FastAPI
+
+#### Introduction
+The CrownKing e-commerce platform, focused on men's jewelry, requires a sophisticated AI chatbot to enhance user experience through recommendations, customer support, product finding, and men's fashion question-answering. The chatbot will leverage Cache-Augmented Generation (CAG) to preload knowledge from documents stored in a directory, ensuring fast and accurate responses. Built using FastAPI for integration with other backend systems, the chatbot will be powered by LangGraph for modular AI agent design and support multiple AI models (e.g., Groq with Llama, OpenAI, Google Gemini) via `.env` configuration. This report provides a detailed plan, architecture, and implementation roadmap to achieve these objectives as of April 17, 2025.
+
+#### Background and Context
+The CrownKing backend, as described in `api-contracts.md` and `README.md`, is a Node.js and Express-based system with PostgreSQL, Sequelize ORM, Stripe payments, and JWT authentication. The chatbot will complement this by providing an AI-driven interface for user interactions, accessible via API endpoints for integration with the existing backend or other systems. CAG, as outlined in recent research ([Cache-Augmented Generation Tutorial]([invalid url, do not cite])), preloads knowledge into the model's context, reducing latency compared to Retrieval-Augmented Generation (RAG). LangGraph, a framework for building AI agents as graphs ([LangGraph Documentation]([invalid url, do not cite])), offers a modular approach to handle diverse query types, making it ideal for this use case.
+
+#### System Architecture
+The chatbot architecture is designed for modularity, scalability, and flexibility, integrating with the Next.js frontend and FastAPI backend of the CrownKing platform.
+
+- **FastAPI Backend**: Exposes API endpoints (e.g., `/chat`) for chatbot interactions, secured with API key authentication.
+- **LangGraph**: Defines a graph with nodes for processing user queries, leveraging a custom LLM wrapper for model flexibility.
+- **CAG Implementation**:
+  - For local models (e.g., Hugging Face's Mistral-7B), uses `past_key_values` to cache preloaded document context.
+  - For API-based models (e.g., OpenAI, Groq), includes context in each request.
+- **Document Loading**: Reads text files from a directory (e.g., product catalogs, FAQs) at startup.
+- **LLM Flexibility**: Supports multiple providers via `.env` configuration, ensuring easy model switching.
+- **Database (Optional)**: PostgreSQL for storing conversation history or metadata, if needed.
+- **Deployment**: Dockerized application deployable on Render or Fly.io with CI/CD.
+
+#### Key Components
+| **Component** | **Description** | **Technology** |
+|---------------|-----------------|----------------|
+| **API Layer** | Handles requests and responses | FastAPI, Uvicorn |
+| **AI Agent** | Processes queries as a graph | LangGraph |
+| **LLM Interface** | Abstracts model interactions | Custom Python classes |
+| **CAG** | Preloads document context | Transformers (Hugging Face), API prompts |
+| **Document Loader** | Reads knowledge files | Python `glob` |
+| **Deployment** | Containerized app | Docker, Render/Fly.io |
+
+#### Implementation Roadmap
+The following roadmap outlines the steps to build the chatbot within 6-8 hours, leveraging Cursor for rapid development.
+
+| **Step** | **Tasks** | **Duration** | **Output** |
+|----------|-----------|--------------|------------|
+| **1. Project Setup** | Initialize FastAPI project, install dependencies, configure `.env`, set up folder structure | 30-45 mins | Project structure, `.env`, dependencies |
+| **2. LLM Interface** | Define `BaseLLM` and implement `HuggingFaceLLM`, `OpenAILLM`, etc. | 1-2 hours | LLM classes in `src/models/` |
+| **3. Document Loading** | Create function to load documents from directory | 30 mins | `load_documents` in `src/utils/` |
+| **4. LangGraph Chatbot** | Build graph with LLMNode using CustomLLM | 1-2 hours | Graph in `src/services/` |
+| **5. FastAPI Routes** | Implement `/chat` endpoint with authentication | 30 mins | Routes in `src/routes/` |
+| **6. Testing & Deployment** | Write tests, containerize, deploy to Render | 1-2 hours | Tests, Dockerfile, CI/CD |
+
+#### Detailed Implementation Steps
+
+1. **Project Setup**:
+   - Create `crownking-chatbot` directory and initialize a virtual environment:
+     ```bash
+     python -m venv venv
+     source venv/bin/activate
+     ```
+   - Install dependencies:
+     ```bash
+     pip install fastapi uvicorn langgraph-core langgraph-community langchain-core langchain-community transformers torch openai groq google-generativeai python-dotenv
+     ```
+   - Create `.env`:
+     ```env
+     LLM_TYPE=huggingface
+     HUGGINGFACE_MODEL=mistralai/Mistral-7B-Instruct-v0.1
+     OPENAI_API_KEY=your_openai_key
+     GROQ_API_KEY=your_groq_key
+     GEMINI_API_KEY=your_gemini_key
+     DOCUMENTS_DIR=./documents
+     ```
+   - Set up folder structure as shown above.
+
+2. **LLM Interface**:
+   - Define `BaseLLM` and implement subclasses for each provider, ensuring CAG for Hugging Face models and context inclusion for API-based models.
+   - Use `HuggingFaceLLM` to compute `past_key_values` at startup for preloaded context.
+
+3. **Document Loading**:
+   - Implement `load_documents` to read `.txt` files from `DOCUMENTS_DIR`, concatenating them into a single context string.
+   - Ensure documents are curated to fit within model context windows (e.g., 32k tokens for Mistral-7B).
+
+4. **LangGraph Chatbot**:
+   - Create a simple graph with an LLMNode that processes user queries using a `CustomLLM` wrapper.
+   - Configure `CustomLLM` to handle CAG for Hugging Face models and standard prompting for others.
+
+5. **FastAPI Routes**:
+   - Implement a secure `/chat` endpoint using Pydantic for request validation.
+   - Add API key authentication if required by other backend systems.
+
+6. **Testing and Deployment**:
+   - Write unit tests for LLM implementations and integration tests for the `/chat` endpoint.
+   - Create a `Dockerfile` and deploy to Render or Fly.io with GitHub Actions for CI/CD.
+
+#### Security and Scalability
+- **Security**:
+  - Use API key authentication for `/chat` endpoint.
+  - Sanitize user inputs to prevent injection attacks.
+  - Follow OWASP guidelines ([OWASP Top 10]([invalid url, do not cite])).
+- **Scalability**:
+  - Use Redis for caching responses if needed (beyond CAG).
+  - Deploy with auto-scaling on Render.
+  - Optimize document loading to handle large knowledge bases.
+
+#### Future Enhancements
+- **Hybrid CAG-RAG**: Combine CAG for static knowledge with RAG for dynamic data.
+- **Conversation History**: Add memory nodes in LangGraph for multi-turn interactions.
+- **Advanced Recommendations**: Integrate with FastAPI backend for real-time inventory data.
+
+#### Key Citations
+- [Node.js Best Practices]([invalid url, do not cite])
+- [Sequelize Documentation]([invalid url, do not cite])
+- [TypeScript Documentation]([invalid url, do not cite])
+- [FastAPI Documentation]([invalid url, do not cite])
+- [LangGraph Documentation]([invalid url, do not cite])
+- [OWASP Top 10 Security Guidelines]([invalid url, do not cite])
+- [Cache-Augmented Generation Tutorial]([invalid url, do not cite])
+- [Render Deployment Documentation]([invalid url, do not cite])
+- [GitHub Actions CI/CD Guide]([invalid url, do not cite])
+- [Postman API Testing Tool]([invalid url, do not cite])
+
+
+
+
+------------------------------------------------------------
+
+
+
+
 Building a Chatbot with Cache-Augmented Generation (CAG) using DeepSeek R1 and Streamlit
 Vansh Kakkar
 Stuvalley AI Nexus

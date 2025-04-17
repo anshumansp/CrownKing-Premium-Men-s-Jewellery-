@@ -2,20 +2,38 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { CartItem } from '@/types';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectCartItems, selectCartTotal, clearCart } from '@/redux/slices/cartSlice';
 import Link from 'next/link';
-import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
-import PaymentForm from '@/components/PaymentForm';
+import Image from 'next/image';
+import { toast } from 'react-hot-toast';
 
-const stripePromise = loadStripe(process.env.STRIPE_PUBLISHABLE_KEY!);
+// Define image mappings and fallbacks
+const CATEGORY_IMAGE_MAP = {
+  ring: '/jewe5.jpg',
+  rings: '/jewe5.jpg',
+  bracelet: '/jewe2.webp',
+  bracelets: '/jewe2.webp',
+  necklace: '/jewe1.webp',
+  necklaces: '/jewe1.webp',
+  pendant: '/jewe8.webp',
+  pendants: '/jewe8.webp',
+  watch: '/jewe12.webp',
+  watches: '/jewe12.webp',
+  accessory: '/jewe9.jpg',
+  accessories: '/jewe9.jpg',
+  earring: '/jewe6.avif',
+  earrings: '/jewe6.avif',
+  default: '/jewe1.webp' // Default fallback image
+};
 
 export default function Checkout() {
   const router = useRouter();
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [orderId, setOrderId] = useState<string | null>(null);
+  const dispatch = useDispatch();
+  const cartItems = useSelector(selectCartItems);
+  const cartTotal = useSelector(selectCartTotal);
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1); // 1: Shipping, 2: Review, 3: Payment
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -25,118 +43,174 @@ export default function Checkout() {
     city: '',
     state: '',
     zipCode: '',
-    country: ''
+    country: 'India'
   });
 
-  useEffect(() => {
-    fetchCart();
-  }, []);
+  // New: Add form error state
+  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+  const [formTouched, setFormTouched] = useState<{ [key: string]: boolean }>({});
+  const [paymentMethod, setPaymentMethod] = useState('cod');
 
-  const fetchCart = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please login to checkout');
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch('http://localhost:5000/api/cart', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch cart');
-      }
-
-      const data = await response.json();
-      setCartItems(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch cart');
-    } finally {
-      setLoading(false);
+  // Get image source with fallback
+  const getImageSrc = (item: any) => {
+    if (item.images && item.images.length > 0 && !item.images[0].includes('example.com')) {
+      return item.images[0];
     }
+
+    // Use category-based fallback
+    if (item.category) {
+      const category = item.category.toLowerCase();
+      for (const [key, value] of Object.entries(CATEGORY_IMAGE_MAP)) {
+        if (category.includes(key)) {
+          return value;
+        }
+      }
+    }
+
+    // Default fallback
+    return CATEGORY_IMAGE_MAP.default;
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // New: Updated handleInputChange to include validation
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+
+    // Mark field as touched
+    setFormTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+
+    // Validate the field
+    validateField(name, value);
   };
 
-  const calculateTotal = () => {
-    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  // New: Field validation function
+  const validateField = (name: string, value: string) => {
+    let error = '';
+
+    if (!value.trim()) {
+      error = `${name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1').toLowerCase()} is required`;
+    } else {
+      switch (name) {
+        case 'email':
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value)) {
+            error = 'Please enter a valid email address';
+          }
+          break;
+        case 'phone':
+          const phoneRegex = /^\d{10}$/;
+          if (!phoneRegex.test(value)) {
+            error = 'Please enter a valid 10-digit phone number';
+          }
+          break;
+        case 'zipCode':
+          const zipRegex = /^\d{6}$/;
+          if (!zipRegex.test(value)) {
+            error = 'Please enter a valid 6-digit PIN code';
+          }
+          break;
+      }
+    }
+
+    setFormErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
+
+    return !error;
   };
 
-  const handleCreateOrder = async () => {
+  const formatPrice = (price: number) => {
+    return '₹' + price.toLocaleString('en-IN');
+  };
+
+  const handlePaymentMethodChange = (method: string) => {
+    setPaymentMethod(method);
+  };
+
+  // New: Updated validateShippingInfo function
+  const validateShippingInfo = () => {
+    const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'address', 'city', 'state', 'zipCode', 'country'];
+    let isValid = true;
+    const newErrors: { [key: string]: string } = {};
+    const newTouched: { [key: string]: boolean } = {};
+
+    // Mark all fields as touched
+    requiredFields.forEach(field => {
+      newTouched[field] = true;
+      const value = formData[field as keyof typeof formData] as string;
+      if (!validateField(field, value)) {
+        isValid = false;
+      }
+    });
+
+    setFormTouched(prev => ({ ...prev, ...newTouched }));
+
+    if (!isValid) {
+    // Find the first error to show in toast
+      for (const field of requiredFields) {
+        if (formErrors[field]) {
+          toast.error(formErrors[field]);
+          break;
+        }
+      }
+    }
+
+    return isValid;
+  };
+
+  const handleBackToShipping = () => {
+    setStep(1);
+    window.scrollTo(0, 0);
+  };
+
+  const handleContinueToPayment = () => {
+    setStep(3);
+    window.scrollTo(0, 0);
+  };
+
+  const handleBackToReview = () => {
+    setStep(2);
+    window.scrollTo(0, 0);
+  };
+
+  const handlePlaceOrder = async () => {
+    setLoading(true);
+
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please login to place order');
-        return;
-      }
+      // Simulate order processing
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-      const orderData = {
-        items: cartItems,
-        shippingAddress: formData,
-        total: calculateTotal()
-      };
+      // Display success message
+      toast.success('Order placed successfully!');
 
-      const response = await fetch('http://localhost:5000/api/orders', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(orderData)
-      });
+      // Clear cart
+      dispatch(clearCart());
 
-      if (!response.ok) {
-        throw new Error('Failed to create order');
-      }
-
-      const data = await response.json();
-      setOrderId(data.id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create order');
+      // Navigate to confirmation page
+      router.push('/orders/confirmation');
+    } catch (error) {
+      console.error('Error placing order:', error);
+      toast.error('Failed to place order. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handlePaymentSuccess = () => {
-    router.push('/orders/confirmation');
-  };
-
-  if (loading) {
+  // If cart is empty, redirect to cart page
+  if (typeof cartItems === 'undefined' || cartItems.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Loading...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center text-red-600">{error}</div>
-        <div className="text-center mt-4">
-          <Link href="/auth/login" className="text-brand-teal hover:underline">
-            Login to checkout
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (cartItems.length === 0) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-brand-dark-blue mb-4">Your cart is empty</h2>
-          <Link href="/products" className="btn-primary">
+      <div className="container mx-auto px-4 py-8 min-h-screen">
+        <div className="bg-white border border-gray-200 rounded-lg p-8 max-w-lg mx-auto text-center">
+          <h2 className="text-2xl font-bold text-brand-primary mb-4">Your cart is empty</h2>
+          <p className="text-gray-600 mb-6">Add some items to your cart before checking out.</p>
+          <Link href="/products" className="inline-block bg-brand-primary text-white px-6 py-3 rounded-md">
             Continue Shopping
           </Link>
         </div>
@@ -144,174 +218,364 @@ export default function Checkout() {
     );
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-brand-dark-blue mb-8">Checkout</h1>
+  // New: Form field component to reduce repetition
+  const FormField = ({
+    name,
+    label,
+    type = 'text',
+    placeholder = '',
+    hint = '',
+    options = []
+  }: {
+    name: string;
+    label: string;
+    type?: string;
+    placeholder?: string;
+    hint?: string;
+    options?: { value: string, label: string }[]
+  }) => {
+    const hasError = !!formErrors[name] && formTouched[name];
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    if (type === 'select') {
+      return (
         <div>
-          <h2 className="text-xl font-semibold text-brand-dark-blue mb-6">Shipping Information</h2>
-          <form className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">First Name</label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor={name}>
+            {label} *
+            {hint && <span className="text-xs text-gray-500 ml-1">({hint})</span>}
+          </label>
+          <select
+            id={name}
+            name={name}
+            value={formData[name as keyof typeof formData] as string}
+            onChange={handleInputChange}
+            onBlur={() => setFormTouched(prev => ({ ...prev, [name]: true }))}
+            className={`w-full border ${hasError ? 'border-red-500' : 'border-gray-300'} rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-primary`}
+            required
+          >
+            {options.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+          {hasError && (
+            <p className="mt-1 text-sm text-red-500">{formErrors[name]}</p>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor={name}>
+          {label} *
+          {hint && <span className="text-xs text-gray-500 ml-1">({hint})</span>}
+        </label>
+        <input
+          type={type}
+          id={name}
+          name={name}
+          value={formData[name as keyof typeof formData] as string}
+          onChange={handleInputChange}
+          onBlur={() => setFormTouched(prev => ({ ...prev, [name]: true }))}
+          placeholder={placeholder}
+          className={`w-full border ${hasError ? 'border-red-500' : 'border-gray-300'} rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-primary`}
+          required
+        />
+        {hasError && (
+          <p className="mt-1 text-sm text-red-500">{formErrors[name]}</p>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8 mt-24 min-h-screen">
+      <h1 className="text-3xl font-bold text-center mb-8">Checkout</h1>
+
+      {/* Checkout Steps */}
+      <div className="max-w-4xl mx-auto mb-8">
+        <div className="flex justify-between items-center">
+          <div className={`flex flex-col items-center ${step >= 1 ? 'text-brand-primary' : 'text-gray-400'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step >= 1 ? 'bg-brand-primary text-white' : 'bg-gray-200'}`}>
+              1
+            </div>
+            <span>Shipping</span>
+          </div>
+          <div className={`flex-1 h-1 mx-4 ${step >= 2 ? 'bg-brand-primary' : 'bg-gray-200'}`}></div>
+          <div className={`flex flex-col items-center ${step >= 2 ? 'text-brand-primary' : 'text-gray-400'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step >= 2 ? 'bg-brand-primary text-white' : 'bg-gray-200'}`}>
+              2
+            </div>
+            <span>Review</span>
+          </div>
+          <div className={`flex-1 h-1 mx-4 ${step >= 3 ? 'bg-brand-primary' : 'bg-gray-200'}`}></div>
+          <div className={`flex flex-col items-center ${step >= 3 ? 'text-brand-primary' : 'text-gray-400'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step >= 3 ? 'bg-brand-primary text-white' : 'bg-gray-200'}`}>
+              3
+            </div>
+            <span>Payment</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+        <div className="lg:col-span-2">
+          {/* Step 1: Shipping Information */}
+          {step === 1 && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-6">Shipping Information</h2>
+              <form
+                className="space-y-6" 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (validateShippingInfo()) {
+                    setStep(2);
+                    window.scrollTo(0, 0);
+                  }
+                }}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField name="firstName" label="First Name" />
+                  <FormField name="lastName" label="Last Name" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField name="email" label="Email" type="email" />
+                  <FormField
+                    name="phone" 
+                    label="Phone"
+                    type="tel"
+                    hint="10-digit number"
+                    placeholder="10-digit number without spaces"
+                  />
+                </div>
+
+                <FormField name="address" label="Address" />
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="col-span-2">
+                    <FormField name="city" label="City" />
+                  </div>
+                  <FormField name="state" label="State" />
+                  <FormField name="zipCode" label="PIN Code" hint="6-digit" />
+                </div>
+
+                <FormField
+                  name="country" 
+                  label="Country"
+                  type="select"
+                  options={[
+                    { value: 'India', label: 'India' },
+                    { value: 'United States', label: 'United States' },
+                    { value: 'United Kingdom', label: 'United Kingdom' },
+                    { value: 'Canada', label: 'Canada' },
+                    { value: 'Australia', label: 'Australia' }
+                  ]}
                 />
+
+                <div className="mt-8 flex justify-end">
+                  <button
+                    type="submit"
+                    className="bg-black text-white px-6 py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
+                  >
+                    Continue to Review
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Step 2: Order Review */}
+          {step === 2 && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-6">Review Your Order</h2>
+
+              <div className="mb-6">
+                <h3 className="font-medium text-gray-700 mb-2">Shipping Address</h3>
+                <div className="bg-gray-50 p-4 rounded">
+                  <p>
+                    {formData.firstName} {formData.lastName}<br />
+                    {formData.address}<br />
+                    {formData.city}, {formData.state} {formData.zipCode}<br />
+                    {formData.country}<br />
+                    {formData.email}<br />
+                    {formData.phone}
+                  </p>
+                </div>
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
-                />
+                <h3 className="font-medium text-gray-700 mb-2">Order Items</h3>
+                <div className="space-y-4">
+                  {Array.isArray(cartItems) && cartItems.map((item) => (
+                    <div key={item.id} className="flex items-center border-b pb-4">
+                      <div className="relative w-16 h-16 flex-shrink-0">
+                        <Image
+                          src={getImageSrc(item)}
+                          alt={item.name}
+                          fill
+                          className="object-cover rounded"
+                        />
+                      </div>
+                      <div className="ml-4 flex-grow">
+                        <h4 className="font-medium">{item.name}</h4>
+                        <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                      </div>
+                      <div className="ml-4 text-right">
+                        <p className="font-medium">{formatPrice(item.price * item.quantity)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-between">
+                <button
+                  onClick={handleBackToShipping}
+                  className="border border-gray-300 text-gray-700 px-6 py-3 rounded-md font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Back to Shipping
+                </button>
+                <button
+                  onClick={handleContinueToPayment}
+                  className="bg-black text-white px-6 py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
+                >
+                  Continue to Payment
+                </button>
               </div>
             </div>
+          )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
-              />
-            </div>
+          {/* Step 3: Payment Method */}
+          {step === 3 && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-6">Payment Method</h2>
+              <div className="space-y-4">
+                <div className="border border-gray-200 rounded-lg p-4 cursor-pointer" onClick={() => handlePaymentMethodChange('cod')}>
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="cod"
+                      name="paymentMethod"
+                      checked={paymentMethod === 'cod'}
+                      onChange={() => { }}
+                      className="w-4 h-4 text-brand-primary"
+                    />
+                    <label htmlFor="cod" className="ml-2 cursor-pointer flex-grow">
+                      <div className="font-medium">Cash on Delivery</div>
+                      <div className="text-sm text-gray-500">Pay when you receive the package</div>
+                    </label>
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Phone</label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
-              />
-            </div>
+                <div className="border border-gray-200 rounded-lg p-4 cursor-pointer opacity-50" onClick={() => toast.error('This payment method is not available yet')}>
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="card"
+                      name="paymentMethod"
+                      checked={false}
+                      onChange={() => { }}
+                      disabled
+                      className="w-4 h-4 text-brand-primary"
+                    />
+                    <label htmlFor="card" className="ml-2 cursor-pointer flex-grow">
+                      <div className="font-medium">Credit/Debit Card</div>
+                      <div className="text-sm text-gray-500">Coming soon</div>
+                    </label>
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Address</label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">City</label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
-                />
+                <div className="border border-gray-200 rounded-lg p-4 cursor-pointer opacity-50" onClick={() => toast.error('This payment method is not available yet')}>
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="upi"
+                      name="paymentMethod"
+                      checked={false}
+                      onChange={() => { }}
+                      disabled
+                      className="w-4 h-4 text-brand-primary"
+                    />
+                    <label htmlFor="upi" className="ml-2 cursor-pointer flex-grow">
+                      <div className="font-medium">UPI</div>
+                      <div className="text-sm text-gray-500">Coming soon</div>
+                    </label>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">State</label>
-                <input
-                  type="text"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleInputChange}
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
-                />
+
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h3 className="font-medium text-gray-700 mb-2">Order Summary</h3>
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600">Subtotal:</span>
+                  <span>{formatPrice(cartTotal)}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600">Shipping:</span>
+                  <span>{cartTotal > 10000 ? 'Free' : formatPrice(100)}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600">Tax (18%):</span>
+                  <span>{formatPrice(cartTotal * 0.18)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t border-gray-200">
+                  <span>Total:</span>
+                  <span>{formatPrice(cartTotal + (cartTotal > 10000 ? 0 : 100) + (cartTotal * 0.18))}</span>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">ZIP Code</label>
-                <input
-                  type="text"
-                  name="zipCode"
-                  value={formData.zipCode}
-                  onChange={handleInputChange}
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
-                />
+
+              <div className="mt-8 flex justify-between">
+                <button
+                  onClick={handleBackToReview}
+                  className="border border-gray-300 text-gray-700 px-6 py-3 rounded-md font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Back to Review
+                </button>
+                <button
+                  onClick={handlePlaceOrder}
+                  disabled={loading}
+                  className={`bg-black text-white px-8 py-3 rounded-md font-medium transition-colors ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-800'}`}
+                >
+                  {loading ? 'Processing...' : 'Place Order'}
+                </button>
               </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Country</label>
-              <input
-                type="text"
-                name="country"
-                value={formData.country}
-                onChange={handleInputChange}
-                required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-teal focus:ring-brand-teal"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleCreateOrder}
-              className="btn-primary w-full"
-            >
-              Continue to Payment
-            </button>
-          </form>
+          )}
         </div>
 
-        <div>
-          <h2 className="text-xl font-semibold text-brand-dark-blue mb-6">Order Summary</h2>
-          <div className="bg-white p-6 rounded-lg shadow">
-            {cartItems.map((item) => (
-              <div key={item.id} className="flex justify-between mb-4">
-                <div>
+        {/* Order Summary */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 h-fit">
+          <h2 className="text-xl font-semibold mb-6">Order Summary</h2>
+          <div className="max-h-60 overflow-y-auto mb-4 space-y-4">
+            {Array.isArray(cartItems) && cartItems.map((item) => (
+              <div key={item.id} className="flex justify-between">
+                <div className="flex-1">
                   <h3 className="font-medium">{item.name}</h3>
-                  <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                  <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                 </div>
-                <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                <p className="font-medium">{formatPrice(item.price * item.quantity)}</p>
               </div>
             ))}
-
-            <div className="border-t pt-4">
-              <div className="flex justify-between mb-2">
-                <span>Subtotal</span>
-                <span>${calculateTotal().toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between mb-2">
-                <span>Shipping</span>
-                <span>Free</span>
-              </div>
-              <div className="flex justify-between font-bold text-lg">
+          </div>
+          <div className="border-t pt-4 space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Subtotal</span>
+              <span>{formatPrice(cartTotal)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Shipping</span>
+              <span>{cartTotal > 10000 ? 'Free' : formatPrice(100)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Tax</span>
+              <span>{formatPrice(cartTotal * 0.18)}</span>
+            </div>
+            <div className="border-t pt-2 mt-2">
+              <div className="flex justify-between font-bold">
                 <span>Total</span>
-                <span>${calculateTotal().toFixed(2)}</span>
+                <span>{formatPrice(cartTotal + (cartTotal > 10000 ? 0 : 100) + (cartTotal * 0.18))}</span>
               </div>
             </div>
-
-            {orderId && (
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold text-brand-dark-blue mb-4">Payment</h3>
-                <Elements stripe={stripePromise}>
-                  <PaymentForm
-                    amount={calculateTotal()}
-                    orderId={orderId}
-                    onSuccess={handlePaymentSuccess}
-                    onError={setError}
-                  />
-                </Elements>
-              </div>
-            )}
           </div>
         </div>
       </div>

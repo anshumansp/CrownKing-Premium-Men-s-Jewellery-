@@ -13,6 +13,7 @@ import {
 } from '@/redux/slices/cartSlice';
 import { getProductById } from '@/services/productService';
 import { toast } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 // Define image mappings and fallbacks
 const CATEGORY_IMAGE_MAP = {
@@ -47,6 +48,7 @@ export default function Cart() {
   const cartItems = useSelector(selectCartItems);
   const cartTotal = useSelector(selectCartTotal);
   const dispatch = useDispatch();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [updatedProducts, setUpdatedProducts] = useState<{ [key: string]: boolean }>({});
 
@@ -94,11 +96,10 @@ export default function Cart() {
 
   const handleCheckout = () => {
     setLoading(true);
-    // Simulate checkout process
-    setTimeout(() => {
-      setLoading(false);
-      toast.success('Order placed successfully!');
-    }, 1500);
+    // Redirect to checkout page without turning off loading
+    router.push('/checkout');
+    // Don't set loading to false - we'll keep the button in loading state
+    // until the page navigates, giving better user feedback
   };
 
   // Get image source with fallback

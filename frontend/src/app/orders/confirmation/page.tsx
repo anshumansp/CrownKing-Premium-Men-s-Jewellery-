@@ -1,123 +1,114 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { CheckCircleIcon } from '@heroicons/react/24/outline';
-import { Order } from '@/types';
+import { CheckCircleIcon } from '@heroicons/react/24/solid';
+import { ChevronRightIcon } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
 
-function OrderConfirmationContent() {
-    const searchParams = useSearchParams();
-    const orderId = searchParams.get('orderId');
-    const [order, setOrder] = useState<Order | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+export default function OrderConfirmation() {
+    const router = useRouter();
+    const [orderId] = useState(`ORD-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`);
+    const [estimatedDelivery] = useState(() => {
+        const deliveryDate = new Date();
+        deliveryDate.setDate(deliveryDate.getDate() + 5);
+        return deliveryDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    });
 
     useEffect(() => {
-        if (orderId) {
-            fetchOrderDetails();
-        } else {
-            setLoading(false);
-        }
+        // Track order confirmation
+        console.log('Order confirmed:', orderId);
     }, [orderId]);
 
-    const fetchOrderDetails = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                setError('Please login to view your order details');
-                setLoading(false);
-                return;
-            }
-
-            const response = await fetch(`http://localhost:5000/api/orders/${orderId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch order details');
-            }
-
-            const data = await response.json();
-            setOrder(data);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to fetch order details');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="container mx-auto px-4 py-12">
-                <div className="text-center">Loading order details...</div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="container mx-auto px-4 py-12">
-                <div className="text-center text-red-600">{error}</div>
-            </div>
-        );
-    }
-
     return (
-        <div className="container mx-auto px-4 py-12">
-            <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
-                <div className="text-center mb-8">
-                    <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
-                    <p className="text-gray-600">
-                        Thank you for your purchase. Your order has been successfully placed.
-                    </p>
-                    {orderId && (
-                        <p className="text-gray-600 mt-2">
-                            Your order number is <span className="font-semibold">{orderId}</span>
+        <div className="container mx-auto px-4 py-16 mt-16 min-h-screen">
+            <div className="max-w-3xl mx-auto">
+                <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-sm">
+                    <div className="text-center mb-10">
+                        <div className="inline-flex items-center justify-center bg-green-100 p-3 rounded-full mb-6">
+                            <CheckCircleIcon className="h-16 w-16 text-green-600" />
+            </div>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-3">Order Confirmed!</h1>
+                        <p className="text-lg text-gray-600">
+                            Thank you for your purchase. Your order has been received and is being processed.
                         </p>
-                    )}
-                </div>
+                    </div>
 
-                <div className="border-t border-gray-200 pt-6 mb-6">
-                    <h2 className="text-xl font-semibold mb-4">What happens next?</h2>
-                    <ul className="space-y-2 text-gray-600">
-                        <li>• You will receive an order confirmation email shortly</li>
-                        <li>• Our team will process your order within 24-48 hours</li>
-                        <li>• You will receive shipping information once your order is dispatched</li>
-                        <li>• Track your order status in your order history</li>
-                    </ul>
-                </div>
+                    <div className="border-t border-b border-gray-200 py-6 mb-6">
+                        <div className="flex justify-between mb-4">
+                            <span className="text-gray-600">Order Number:</span>
+                            <span className="font-medium">{orderId}</span>
+            </div>
+                        <div className="flex justify-between">
+                            <span className="text-gray-600">Estimated Delivery:</span>
+                            <span className="font-medium">{estimatedDelivery}</span>
+                        </div>
+                    </div>
 
-                <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 justify-center">
-                    <Link
-                        href="/orders"
-                        className="bg-black text-white py-3 px-6 rounded text-center hover:bg-gray-800 transition"
-                    >
-                        View Order History
-                    </Link>
-                    <Link
-                        href="/products"
-                        className="border border-black text-black py-3 px-6 rounded text-center hover:bg-gray-100 transition"
-                    >
-                        Continue Shopping
-                    </Link>
+                    <div className="mb-8">
+                        <h2 className="text-xl font-semibold mb-4">What's Next?</h2>
+                        <ul className="space-y-4">
+                            <li className="flex">
+                                <div className="rounded-full bg-gray-100 p-1 mr-4 flex-shrink-0">
+                                    <span className="flex items-center justify-center h-6 w-6 rounded-full bg-black text-white">1</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-medium">Order Confirmation</h3>
+                                    <p className="text-gray-600">We'll send you an email with your order details.</p>
+                                </div>
+                            </li>
+                            <li className="flex">
+                                <div className="rounded-full bg-gray-100 p-1 mr-4 flex-shrink-0">
+                                    <span className="flex items-center justify-center h-6 w-6 rounded-full bg-black text-white">2</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-medium">Order Processing</h3>
+                                    <p className="text-gray-600">Your order is now being processed by our team.</p>
+                                </div>
+                            </li>
+                            <li className="flex">
+                                <div className="rounded-full bg-gray-100 p-1 mr-4 flex-shrink-0">
+                                    <span className="flex items-center justify-center h-6 w-6 rounded-full bg-black text-white">3</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-medium">Shipping</h3>
+                                    <p className="text-gray-600">Once shipped, we'll update you with tracking information.</p>
+                                </div>
+                            </li>
+                            <li className="flex">
+                                <div className="rounded-full bg-gray-100 p-1 mr-4 flex-shrink-0">
+                                    <span className="flex items-center justify-center h-6 w-6 rounded-full bg-black text-white">4</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-medium">Delivery</h3>
+                                    <p className="text-gray-600">Your order will be delivered to your doorstep.</p>
+                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <Link
+                            href="/orders" 
+                            className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                        >
+                            View Orders
+                            <ChevronRightIcon className="ml-2 h-5 w-5" aria-hidden="true" />
+                        </Link>
+                        <Link
+                            href="/products" 
+                            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-black hover:bg-gray-800"
+                        >
+                            Continue Shopping
+                            <ChevronRightIcon className="ml-2 h-5 w-5" aria-hidden="true" />
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>
-    );
-}
-
-export default function OrderConfirmation() {
-    return (
-        <Suspense fallback={
-            <div className="container mx-auto px-4 py-12">
-                <div className="text-center">Loading...</div>
-            </div>
-        }>
-            <OrderConfirmationContent />
-        </Suspense>
     );
 } 
