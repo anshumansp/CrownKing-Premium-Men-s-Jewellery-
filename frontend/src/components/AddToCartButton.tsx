@@ -39,7 +39,7 @@ export default function AddToCartButton({
             <button
                 onClick={handleAddToCart}
                 disabled={isAdding || !product.inStock}
-                className={`rounded-full p-2 text-gray-700 hover:bg-gray-100 transition-colors ${isAdding ? 'bg-green-50 text-green-600' : ''} ${!product.inStock ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+                className={`rounded-full p-2 bg-white text-gray-700 hover:bg-red-500 hover:text-white transition-colors shadow-sm ${isAdding ? 'bg-green-50 text-green-600' : ''} ${!product.inStock ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
                 aria-label="Add to cart"
             >
                 <ShoppingCartIcon style={{ width: iconSize, height: iconSize }} />

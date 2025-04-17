@@ -304,14 +304,14 @@ export function ProductClient({ product }: ProductClientProps) {
 
             {/* Similar Products Section */}
             <div>
-                <h2 className="text-2xl font-bold mb-8">Similar Products</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {/* Similar products will be fetched from the server */}
-                </div>
-                <div className="mt-10 text-center">
-                    <Link href="/products" className="inline-block bg-brand-primary text-white px-8 py-3 font-medium hover:bg-brand-primary-dark transition-colors">
+                <div className="flex justify-between items-center mb-8">
+                    <h2 className="text-2xl font-bold">Similar Products</h2>
+                    <Link href="/products" className="inline-block bg-brand-primary text-white px-6 py-2 font-medium hover:bg-brand-primary-dark transition-colors">
                         View All Products
                     </Link>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {/* Similar products will be fetched from the server */}
                 </div>
             </div>
         </div>

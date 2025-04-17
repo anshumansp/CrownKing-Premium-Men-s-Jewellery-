@@ -6,16 +6,21 @@ import Image from 'next/image';
 import {
     MagnifyingGlassIcon,
     UserIcon,
-    ChevronDownIcon
+    ChevronDownIcon,
+    XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import WishlistCount from './WishlistCount';
 import CartCount from './CartCount';
+import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
+    const router = useRouter();
     const { user, isAuthenticated, logout } = useAuth();
     const [isScrolled, setIsScrolled] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const [showSearch, setShowSearch] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const handleScroll = () => {
@@ -30,6 +35,13 @@ export default function Navbar() {
         e.preventDefault();
         logout();
         setShowProfileMenu(false);
+    };
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        router.push('/products');
+        setShowSearch(false);
+        setSearchQuery('');
     };
 
     return (
@@ -69,9 +81,39 @@ export default function Navbar() {
 
                 {/* Action Icons */}
                 <div className="flex items-center space-x-4">
-                    <button className="p-2 hover:text-gray-600" aria-label="Search">
-                        <MagnifyingGlassIcon className="h-5 w-5" />
-                    </button>
+                    {showSearch ? (
+                        <div className="relative flex-1 sm:max-w-xs">
+                            <form onSubmit={handleSearch} className="flex items-center">
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search for products..."
+                                    className="py-2 px-4 pr-10 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                />
+                                <button
+                                    type="submit"
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                                >
+                                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-500" />
+                                </button>
+                            </form>
+                            <button
+                                onClick={() => setShowSearch(false)}
+                                className="absolute right-[-40px] top-1/2 transform -translate-y-1/2 p-2"
+                            >
+                                <XMarkIcon className="h-5 w-5" />
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            className="p-2 hover:text-gray-600"
+                            aria-label="Search"
+                            onClick={() => setShowSearch(true)}
+                        >
+                            <MagnifyingGlassIcon className="h-5 w-5" />
+                        </button>
+                    )}
 
                     <WishlistCount />
 

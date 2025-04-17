@@ -58,8 +58,8 @@ export default function WishlistButton({
             <button
                 onClick={handleToggleWishlist}
                 disabled={isProcessing}
-                className={`rounded-full p-2 ${isProductInWishlist ? 'text-red-500' : 'text-gray-500'
-                    } hover:bg-gray-100 transition-colors ${className}`}
+                className={`rounded-full p-2 bg-white ${isProductInWishlist ? 'text-red-500' : 'text-gray-500'} 
+                hover:bg-red-500 hover:text-white transition-colors shadow-sm ${className}`}
                 aria-label={isProductInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
             >
                 {isProductInWishlist ? (
