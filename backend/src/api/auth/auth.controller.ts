@@ -239,7 +239,7 @@ export const logout = async (
 ) => {
   // If using sessions, destroy session
   if (req.session) {
-    req.session.destroy((err) => {
+    req.session.destroy((err: Error | null) => {
       if (err) {
         return res.status(500).json({
           success: false,

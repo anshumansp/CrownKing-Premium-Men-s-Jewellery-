@@ -5,6 +5,7 @@ import Order from './order.model';
 import CartItem from './cart.model';
 import Review from './review.model';
 import Address from './address.model';
+import WishlistItem from './wishlist.model';
 
 // Sync models with the database
 export const syncModels = async (force = false): Promise<void> => {
@@ -22,6 +23,7 @@ export const syncModels = async (force = false): Promise<void> => {
         CartItem.sync(),
         Review.sync(),
         Address.sync(),
+        WishlistItem.sync(),
       ]);
     }
     console.log(`Models synchronized with database ${force ? '(tables recreated)' : ''}`);
@@ -39,6 +41,7 @@ export {
   CartItem,
   Review,
   Address,
+  WishlistItem,
 };
 
 export default {
@@ -49,4 +52,5 @@ export default {
   CartItem,
   Review,
   Address,
+  WishlistItem,
 }; 

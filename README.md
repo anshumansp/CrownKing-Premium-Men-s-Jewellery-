@@ -16,6 +16,7 @@ CrownKing is a full-stack e-commerce platform specializing in premium men's jewe
 - **Order Confirmation**: Receive confirmation with order details after purchase
 - **Wishlist**: Save favorite items for future purchase
 - **Responsive Design**: Optimized for all devices (desktop, tablet, mobile)
+- **Profile Management**: Update personal details and manage addresses
 
 ### Technical Features
 - **Modern UI**: Sleek, minimalist design with animations and transitions
@@ -28,22 +29,24 @@ CrownKing is a full-stack e-commerce platform specializing in premium men's jewe
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **Framework**: Next.js 14 (React)
+- **Framework**: Next.js 15.2.4 (App Router)
 - **Language**: TypeScript
+- **React**: 19.1.0
 - **Styling**: Tailwind CSS
-- **State Management**: React Hooks
+- **State Management**: React Redux with Redux Toolkit
 - **Animations**: Framer Motion
 - **Payment**: Stripe JS
-- **Icons**: Heroicons
+- **Icons**: Heroicons, React Icons
 
 ### Backend
 - **Runtime**: Node.js
 - **Framework**: Express.js
 - **Database**: PostgreSQL with Sequelize ORM
-- **Authentication**: JWT (JSON Web Tokens)
+- **Authentication**: JWT, Passport (Google OAuth)
 - **Payment Processing**: Stripe API
 - **Security**: Helmet, CORS, Rate Limiting
-- **Caching**: Redis (optional)
+- **Logging**: Winston, Morgan
+- **Validation**: Express Validator
 
 ## 📋 Getting Started
 
@@ -121,10 +124,18 @@ crownking/
 │   └── src/                  # Source code
 │       ├── app/              # Next.js app router
 │       │   ├── auth/         # Authentication pages
+│       │   ├── about/        # About page
+│       │   ├── blog/         # Blog section
+│       │   ├── care/         # Jewelry care guides
 │       │   ├── cart/         # Shopping cart
 │       │   ├── checkout/     # Checkout process
-│       │   ├── orders/       # Order history and confirmation
-│       │   └── products/     # Product listing and details
+│       │   ├── contact/      # Contact page
+│       │   ├── faq/          # FAQ page
+│       │   ├── orders/       # Order history and tracking
+│       │   ├── payments/     # Payment processing
+│       │   ├── products/     # Product listing and details
+│       │   ├── profile/      # User profile management
+│       │   └── wishlist/     # User wishlist
 │       ├── components/       # Reusable React components
 │       ├── hooks/            # Custom React hooks
 │       ├── types/            # TypeScript type definitions
@@ -133,12 +144,17 @@ crownking/
 │   └── package.json          # Frontend dependencies
 │
 └── backend/                  # Express.js backend
-    ├── config/               # Configuration files
-    ├── controllers/          # Route controllers
-    ├── middleware/           # Express middleware
-    ├── models/               # Sequelize models
-    ├── routes/               # API routes
-    ├── utils/                # Utility functions
+    ├── src/                  # Source code
+    │   ├── api/              # API endpoints
+    │   ├── config/           # Configuration files
+    │   ├── middleware/       # Express middleware
+    │   ├── migrations/       # Database migrations
+    │   ├── models/           # Sequelize models
+    │   ├── services/         # Business logic services
+    │   ├── types/            # TypeScript types
+    │   ├── utils/            # Utility functions
+    │   ├── app.ts            # Express app setup
+    │   └── server.ts         # Server entry point
     └── package.json          # Backend dependencies
 ```
 
@@ -148,6 +164,7 @@ The application uses JWT (JSON Web Tokens) for authentication:
 - Tokens are stored in localStorage
 - Protected routes require valid tokens
 - Token expiration is set to 7 days
+- Google OAuth login option available
 
 ## 💳 Payment Processing
 
@@ -164,6 +181,7 @@ The backend provides the following API endpoints:
 - `POST /api/auth/register` - Register a new user
 - `POST /api/auth/login` - Login and get token
 - `POST /api/auth/forgot-password` - Request password reset
+- `GET /api/auth/google` - Google OAuth authentication
 
 ### Products
 - `GET /api/products` - Get all products
@@ -183,6 +201,14 @@ The backend provides the following API endpoints:
 ### Payments
 - `POST /api/payments/create-payment-intent` - Create Stripe payment intent
 
+### User Profile
+- `GET /api/user/profile` - Get user profile
+- `PUT /api/user/profile` - Update user profile
+- `GET /api/user/addresses` - Get user addresses
+- `POST /api/user/addresses` - Add new address
+- `PUT /api/user/addresses/:id` - Update address
+- `DELETE /api/user/addresses/:id` - Delete address
+
 ## 🚀 Deployment
 
 ### Frontend
@@ -194,6 +220,11 @@ vercel
 
 ### Backend
 The backend can be deployed to platforms like Heroku, Railway, or DigitalOcean.
+
+## ⚠️ Known Issues
+
+- Dynamic route parameters in `/products/[id]` need to be awaited before use
+- Missing product images at `/images/products/`
 
 ## 📝 License
 

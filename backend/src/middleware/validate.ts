@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { validationResult, ValidationChain } from 'express-validator';
-import { ApiError } from './errorHandler';
+import { BadRequestError } from '../utils/errors';
 import { winstonLogger } from './logger';
 
 /**
@@ -9,7 +9,7 @@ import { winstonLogger } from './logger';
  * @param validations Array of validation chains to apply
  * @returns Middleware function
  */
-export const validate = (validations: ValidationChain[]) => {
+export const validateRequest = (validations: ValidationChain[]) => {
   return async (req: Request, _res: Response, next: NextFunction) => {
     try {
       // Execute all validations
@@ -31,10 +31,16 @@ export const validate = (validations: ValidationChain[]) => {
         body: req.body,
       });
 
-      // Return validation errors using the factory method
-      return next(ApiError.validationError(errors.array()));
+      // Format errors for the response
+      const formattedErrors = errors.array().reduce((acc: Record<string, string>, error: any) => {
+        acc[error.param] = error.msg;
+        return acc;
+      }, {});
+
+      // Return validation errors
+      return next(new BadRequestError('Validation failed', 'VALIDATION_ERROR', formattedErrors));
     } catch (error) {
-      return next(new ApiError('Validation error', 500, 'VALIDATION_ERROR_UNEXPECTED', false));
+      return next(new BadRequestError('Unexpected validation error', 'VALIDATION_ERROR_UNEXPECTED'));
     }
   };
 };

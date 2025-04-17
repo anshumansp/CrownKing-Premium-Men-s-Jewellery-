@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { env } from '../config/env';
-import { ApiError } from './errorHandler';
+import config from '../config';
+import { UnauthorizedError, ForbiddenError, InternalServerError } from '../utils/errors';
 
 // Extend Express Request interface to include user property
 declare global {
@@ -16,34 +16,54 @@ declare global {
   }
 }
 
-export const protect = async (
-  req: Request,
-  _res: Response,
-  next: NextFunction
-) => {
-  let token;
-
-  // Get token from Authorization header
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
-    // Set token from Bearer token
-    token = req.headers.authorization.split(' ')[1];
+/**
+ * Extract JWT token from request headers
+ */
+const extractToken = (req: Request): string | null => {
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    return req.headers.authorization.split(' ')[1];
   }
+  return null;
+};
 
-  // Check if token exists
-  if (!token) {
-    return next(new ApiError('Not authorized to access this route', 401));
-  }
-
+/**
+ * Verify JWT token and return decoded data
+ */
+const verifyToken = (token: string) => {
   try {
-    // Verify token
-    const decoded = jwt.verify(token, env.JWT_SECRET) as {
+    return jwt.verify(token, config.auth.jwtSecret) as {
       id: string;
       email: string;
       role: string;
     };
+  } catch (error) {
+    return null;
+  }
+};
+
+/**
+ * Required authentication middleware
+ * Will throw 401 if no token or invalid token
+ */
+export const authMiddleware = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
+  try {
+    const token = extractToken(req);
+
+    // Check if token exists
+    if (!token) {
+      return next(new UnauthorizedError('Authentication required'));
+    }
+
+    // Verify token
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return next(new UnauthorizedError('Invalid or expired token'));
+    }
 
     // Add user from payload to request
     req.user = {
@@ -54,23 +74,53 @@ export const protect = async (
 
     next();
   } catch (error) {
-    return next(new ApiError('Not authorized to access this route', 401));
+    return next(new UnauthorizedError('Authentication failed'));
   }
 };
 
-// Middleware to restrict access to specific roles
-export const authorize = (...roles: string[]) => {
+/**
+ * Optional authentication middleware
+ * Will continue if no token or invalid token, but will set user if valid
+ */
+export const optionalAuthMiddleware = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
+  try {
+    const token = extractToken(req);
+
+    if (token) {
+      const decoded = verifyToken(token);
+      
+      if (decoded) {
+        req.user = {
+          id: decoded.id,
+          email: decoded.email,
+          role: decoded.role,
+        };
+      }
+    }
+    
+    next();
+  } catch (error) {
+    // Continue without authentication
+    next();
+  }
+};
+
+/**
+ * Role-based authorization middleware
+ */
+export const authorizeRoles = (...roles: string[]) => {
   return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.user) {
-      return next(new ApiError('User not found in request', 500));
+      return next(new InternalServerError('User not found in request'));
     }
 
     if (!roles.includes(req.user.role)) {
       return next(
-        new ApiError(
-          `User role ${req.user.role} is not authorized to access this route`,
-          403
-        )
+        new ForbiddenError(`User role ${req.user.role} is not authorized to access this route`)
       );
     }
     

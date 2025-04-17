@@ -2,6 +2,7 @@ import app from './app';
 import { env } from './config/env';
 import { testConnection } from './config/db';
 import { syncModels } from './models';
+import { runSeeders } from './seeders';
 
 // Start without database if in development mode and DB is not configured
 if (env.NODE_ENV === 'development' && process.env.SKIP_DB === 'true') {
@@ -28,6 +29,12 @@ if (env.NODE_ENV === 'development' && process.env.SKIP_DB === 'true') {
       // Sync models with database
       const force = process.env.DB_SYNC_FORCE === 'true';
       await syncModels(force);
+      
+      // Run database seeders
+      const shouldSeed = process.env.RUN_SEEDERS === 'true' || env.NODE_ENV === 'development';
+      if (shouldSeed) {
+        await runSeeders();
+      }
       
       // Start the server
       const server = app.listen(env.PORT, () => {

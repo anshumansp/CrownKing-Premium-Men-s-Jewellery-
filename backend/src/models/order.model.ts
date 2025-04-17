@@ -17,16 +17,18 @@ interface ShippingAddress {
 
 // Define order item interface
 interface OrderItem {
-  id: string;
+  id?: string;
   name: string;
   price: number;
   quantity: number;
   images: string[];
-  category: string;
-  subCategory: string;
-  specifications: {
+  category?: string;
+  subCategory?: string;
+  specifications?: {
     [key: string]: string;
   };
+  productId?: string;
+  discount?: number;
 }
 
 // Order interface based on API contract
@@ -35,6 +37,9 @@ export interface OrderAttributes {
   userId: string;
   items: OrderItem[];
   total: number;
+  subtotal: number;
+  shippingCost: number;
+  shippingMethod: string;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   shippingAddress: ShippingAddress;
   paymentDetails?: {
@@ -43,6 +48,7 @@ export interface OrderAttributes {
     cvv: string;
     nameOnCard: string;
   };
+  paymentIntentId?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -56,6 +62,9 @@ class Order extends Model<OrderAttributes, OrderCreationAttributes> implements O
   public userId!: string;
   public items!: OrderItem[];
   public total!: number;
+  public subtotal!: number;
+  public shippingCost!: number;
+  public shippingMethod!: string;
   public status!: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   public shippingAddress!: ShippingAddress;
   public paymentDetails?: {
@@ -64,6 +73,7 @@ class Order extends Model<OrderAttributes, OrderCreationAttributes> implements O
     cvv: string;
     nameOnCard: string;
   };
+  public paymentIntentId?: string;
 
   // Timestamps
   public readonly createdAt!: Date;
@@ -94,6 +104,18 @@ Order.init(
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
     },
+    subtotal: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
+    shippingCost: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
+    shippingMethod: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     status: {
       type: DataTypes.ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled'),
       defaultValue: 'pending',
@@ -104,6 +126,10 @@ Order.init(
     },
     paymentDetails: {
       type: DataTypes.JSONB,
+      allowNull: true,
+    },
+    paymentIntentId: {
+      type: DataTypes.UUID,
       allowNull: true,
     },
   },

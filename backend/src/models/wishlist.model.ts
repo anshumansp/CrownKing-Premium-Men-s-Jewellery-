@@ -3,37 +3,31 @@ import sequelize from '../config/db';
 import User from './user.model';
 import Product from './product.model';
 
-// Review interface based on API contract
-export interface ReviewAttributes {
+// Wishlist item interface
+export interface WishlistItemAttributes {
   id: string;
   userId: string;
   productId: string;
-  rating: number;
-  title: string;
-  content: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-// For creating a new Review with optional ID
-interface ReviewCreationAttributes extends Optional<ReviewAttributes, 'id'> {}
+// For creating a new WishlistItem with optional ID
+interface WishlistItemCreationAttributes extends Optional<WishlistItemAttributes, 'id'> {}
 
-// Review model class
-class Review extends Model<ReviewAttributes, ReviewCreationAttributes> implements ReviewAttributes {
+// Wishlist item model class
+class WishlistItem extends Model<WishlistItemAttributes, WishlistItemCreationAttributes> implements WishlistItemAttributes {
   public id!: string;
   public userId!: string;
   public productId!: string;
-  public rating!: number;
-  public title!: string;
-  public content!: string;
 
   // Timestamps
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
 
-// Initialize Review model
-Review.init(
+// Initialize WishlistItem model
+WishlistItem.init(
   {
     id: {
       type: DataTypes.UUID,
@@ -56,27 +50,11 @@ Review.init(
         key: 'id',
       },
     },
-    rating: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      validate: {
-        min: 1,
-        max: 5,
-      },
-    },
-    title: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    content: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-    },
   },
   {
     sequelize,
-    modelName: 'Review',
-    tableName: 'reviews',
+    modelName: 'WishlistItem',
+    tableName: 'wishlist_items',
     timestamps: true,
     indexes: [
       {
@@ -94,24 +72,24 @@ Review.init(
 );
 
 // Setup associations
-Review.belongsTo(User, {
+WishlistItem.belongsTo(User, {
   foreignKey: 'userId',
   as: 'user',
 });
 
-Review.belongsTo(Product, {
+WishlistItem.belongsTo(Product, {
   foreignKey: 'productId',
   as: 'product',
 });
 
-User.hasMany(Review, {
+User.hasMany(WishlistItem, {
   foreignKey: 'userId',
-  as: 'userReviews',
+  as: 'wishlistItems',
 });
 
-Product.hasMany(Review, {
+Product.hasMany(WishlistItem, {
   foreignKey: 'productId',
-  as: 'productReviews',
+  as: 'wishlistItems',
 });
 
-export default Review; 
+export default WishlistItem; 

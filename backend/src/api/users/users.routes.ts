@@ -15,24 +15,24 @@ import {
   changePasswordValidation,
   addressValidation,
 } from './users.validators';
-import { validate } from '../../middleware/validate';
-import { protect } from '../../middleware/auth';
+import { validateRequest } from '../../middleware/validate';
+import { authMiddleware } from '../../middleware/auth';
 
 const router = Router();
 
 // Protect all routes
-router.use(protect);
+router.use(authMiddleware);
 
 // User profile routes
 router.get('/profile', getProfile);
-router.put('/profile', validate(updateProfileValidation), updateProfile);
-router.put('/change-password', validate(changePasswordValidation), changePassword);
+router.put('/profile', validateRequest(updateProfileValidation), updateProfile);
+router.put('/change-password', validateRequest(changePasswordValidation), changePassword);
 
 // User address routes
 router.get('/addresses', getAddresses);
 router.get('/addresses/:id', getAddressById);
-router.post('/addresses', validate(addressValidation), createAddress);
-router.put('/addresses/:id', validate(addressValidation), updateAddress);
+router.post('/addresses', validateRequest(addressValidation), createAddress);
+router.put('/addresses/:id', validateRequest(addressValidation), updateAddress);
 router.delete('/addresses/:id', deleteAddress);
 router.put('/addresses/:id/default', setDefaultAddress);
 

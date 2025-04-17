@@ -1,5 +1,5 @@
 import passport from 'passport';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as GoogleStrategy, Profile, VerifyCallback } from 'passport-google-oauth20';
 import { env } from './env';
 import User from '../models/user.model';
 
@@ -12,7 +12,7 @@ passport.use(
       callbackURL: `${env.CLIENT_URL}/api/auth/google/callback`,
       scope: ['profile', 'email']
     },
-    async (_accessToken, _refreshToken, profile, done) => {
+    async (_accessToken: string, _refreshToken: string, profile: Profile, done: VerifyCallback) => {
       try {
         // Check if user already exists
         let user = await User.findOne({ where: { googleId: profile.id } });
@@ -53,12 +53,12 @@ passport.use(
 );
 
 // Serialize user into the session
-passport.serializeUser((user: any, done) => {
+passport.serializeUser((user: any, done: (err: Error | null, id?: unknown) => void) => {
   done(null, user.id);
 });
 
 // Deserialize user from the session
-passport.deserializeUser(async (id: string, done) => {
+passport.deserializeUser(async (id: string, done: (err: Error | null, user?: false | Express.User | undefined) => void) => {
   try {
     const user = await User.findByPk(id);
     if (!user) {
@@ -66,7 +66,7 @@ passport.deserializeUser(async (id: string, done) => {
     }
     done(null, user);
   } catch (error) {
-    done(error);
+    done(error as Error);
   }
 });
 
