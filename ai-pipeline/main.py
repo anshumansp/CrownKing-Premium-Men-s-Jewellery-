@@ -2,6 +2,7 @@ import os
 import sys
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 # Add the current directory to the Python path
@@ -36,6 +37,15 @@ app = FastAPI(
     title="CrownKing AI Chatbot API",
     description="A FastAPI + LangGraph AI chatbot using Cache-Augmented Generation",
     version="1.0.0"
+)
+
+# Add CORS middleware to allow requests from the frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods including OPTIONS
+    allow_headers=["*"],  # Allow all headers
 )
 
 @app.get("/", include_in_schema=False)

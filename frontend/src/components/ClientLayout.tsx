@@ -2,6 +2,7 @@
 
 import React, { useEffect, Suspense, useState } from 'react';
 import dynamic from 'next/dynamic';
+import ChatWidget from './ChatWidget';
 
 // Lazy load with custom loading placeholders
 const Navbar = dynamic(() => import('./Navbar'), {
@@ -65,6 +66,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
             <Navbar />
             <MainContainer>{children}</MainContainer>
             <Footer />
+            <ChatWidget />
         </WishlistProvider>
     );
 } 
