@@ -58,7 +58,7 @@ passport.serializeUser((user: any, done: (err: Error | null, id?: unknown) => vo
 });
 
 // Deserialize user from the session
-passport.deserializeUser(async (id: string, done: (err: Error | null, user?: false | Express.User | undefined) => void) => {
+passport.deserializeUser(async (id: string, done: (err: Error | null, user?: false | User | undefined) => void) => {
   try {
     const user = await User.findByPk(id);
     if (!user) {

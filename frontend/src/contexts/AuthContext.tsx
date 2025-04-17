@@ -3,8 +3,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, AuthResponse } from '@/types';
+import { useLoading } from './LoadingContext';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.API_URL || 'http://localhost:5000/api';
 
 interface AuthContextType {
     user: User | null;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const router = useRouter();
+    const { startLoading } = useLoading();
 
     // Check if user is already logged in
     useEffect(() => {
@@ -131,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('user');
         setUser(null);
         setIsAuthenticated(false);
+        startLoading(); // Start loading before navigation
         router.push('/auth/login');
     };
 

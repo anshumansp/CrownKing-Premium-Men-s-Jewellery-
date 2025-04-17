@@ -90,8 +90,8 @@ npm install
 
    Example frontend `.env.local`:
    ```
-   NEXT_PUBLIC_API_URL=http://localhost:5000/api
-   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+   API_URL=http://localhost:5000/api
+   STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
    ```
 
 5. Set up the database

@@ -13,6 +13,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import WishlistCount from './WishlistCount';
 import CartCount from './CartCount';
 import { useRouter } from 'next/navigation';
+import { useLoading } from '@/contexts/LoadingContext';
+import NavigationButton from './NavigationButton';
 
 export default function Navbar() {
     const router = useRouter();
@@ -21,10 +23,11 @@ export default function Navbar() {
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const { startLoading } = useLoading();
 
     useEffect(() => {
         const handleScroll = () => {
-            setIsScrolled(window.scrollY > 20);
+            setIsScrolled(window.scrollY > 10);
         };
 
         window.addEventListener('scroll', handleScroll);
@@ -39,6 +42,7 @@ export default function Navbar() {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
+        startLoading();
         router.push('/products');
         setShowSearch(false);
         setSearchQuery('');

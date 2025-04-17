@@ -18,7 +18,7 @@ if (redisClient) {
     logger.info('Redis client connected');
   });
   
-  redisClient.on('error', (err) => {
+  redisClient.on('error', (err: Error) => {
     logger.error(`Redis error: ${err}`);
   });
 }

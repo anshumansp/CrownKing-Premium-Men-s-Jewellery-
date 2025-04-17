@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/services/authService';
+import { useLoading } from '@/contexts/LoadingContext';
 
 function LoginForm() {
   const router = useRouter();
@@ -17,6 +18,7 @@ function LoginForm() {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { startLoading } = useLoading();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +27,7 @@ function LoginForm() {
 
     try {
       await login(formData.email, formData.password);
+      startLoading(); // Start loading before navigation
       router.push('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -34,6 +37,7 @@ function LoginForm() {
   };
 
   const handleGoogleLogin = () => {
+    startLoading(); // Start loading before redirect
     window.location.href = authService.getGoogleAuthUrl();
   };
 

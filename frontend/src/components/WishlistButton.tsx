@@ -7,6 +7,7 @@ import { HeartIcon as HeartIconOutline } from '@heroicons/react/24/outline';
 import { HeartIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { useLoading } from '@/contexts/LoadingContext';
 
 interface WishlistButtonProps {
     product: Product;
@@ -26,6 +27,7 @@ export default function WishlistButton({
     const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
     const { isAuthenticated } = useAuth();
     const router = useRouter();
+    const { startLoading } = useLoading();
     const [isProcessing, setIsProcessing] = useState(false);
 
     const isProductInWishlist = isInWishlist(product.id);
@@ -37,6 +39,7 @@ export default function WishlistButton({
 
         try {
             if (!isAuthenticated) {
+                startLoading(); // Start loading before navigation
                 router.push('/auth/login');
                 return;
             }
