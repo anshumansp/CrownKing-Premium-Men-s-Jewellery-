@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { TrashIcon } from '@heroicons/react/24/outline';
@@ -11,6 +11,27 @@ import {
   removeItem,
   updateQuantity
 } from '@/redux/slices/cartSlice';
+import { getProductById } from '@/services/productService';
+import { toast } from 'react-hot-toast';
+
+// Define image mappings and fallbacks
+const CATEGORY_IMAGE_MAP = {
+  ring: '/jewe5.jpg',
+  rings: '/jewe5.jpg',
+  bracelet: '/jewe2.webp',
+  bracelets: '/jewe2.webp',
+  necklace: '/jewe1.webp',
+  necklaces: '/jewe1.webp',
+  pendant: '/jewe8.webp',
+  pendants: '/jewe8.webp',
+  watch: '/jewe12.webp',
+  watches: '/jewe12.webp',
+  accessory: '/jewe9.jpg',
+  accessories: '/jewe9.jpg',
+  earring: '/jewe6.avif',
+  earrings: '/jewe6.avif',
+  default: '/jewe1.webp' // Default fallback image
+};
 
 // Define the CartItem interface
 interface CartItem {
@@ -19,12 +40,45 @@ interface CartItem {
   price: number;
   quantity: number;
   images: string[];
+  category?: string;
 }
 
 export default function Cart() {
   const cartItems = useSelector(selectCartItems);
   const cartTotal = useSelector(selectCartTotal);
   const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
+  const [updatedProducts, setUpdatedProducts] = useState<{ [key: string]: boolean }>({});
+
+  // Effect to fetch missing product details
+  useEffect(() => {
+    const fetchMissingProductDetails = async () => {
+      for (const item of cartItems) {
+        // If the product is just an ID reference (price is 0) or name is "Product {id}"
+        if (item.price === 0 || item.name.startsWith('Product ')) {
+          try {
+            const response = await getProductById(item.id);
+            if (response?.data) {
+              // Update the cart with the full product data
+              dispatch(updateQuantity({
+                id: item.id,
+                quantity: item.quantity
+              }));
+
+              // Add the product details to our state
+              setUpdatedProducts(prev => ({ ...prev, [item.id]: true }));
+            }
+          } catch (error) {
+            console.error(`Failed to fetch details for product ${item.id}:`, error);
+          }
+        }
+      }
+    };
+
+    if (cartItems.length > 0) {
+      fetchMissingProductDetails();
+    }
+  }, [cartItems, dispatch]);
 
   const handleUpdateQuantity = (id: string, quantity: number) => {
     dispatch(updateQuantity({ id, quantity }));
@@ -36,6 +90,35 @@ export default function Cart() {
 
   const formatPrice = (price: number) => {
     return '₹' + price.toLocaleString('en-IN');
+  };
+
+  const handleCheckout = () => {
+    setLoading(true);
+    // Simulate checkout process
+    setTimeout(() => {
+      setLoading(false);
+      toast.success('Order placed successfully!');
+    }, 1500);
+  };
+
+  // Get image source with fallback
+  const getImageSrc = (item: CartItem) => {
+    if (item.images && item.images.length > 0 && !item.images[0].includes('example.com')) {
+      return item.images[0];
+    }
+
+    // Use category-based fallback
+    if (item.category) {
+      const category = item.category.toLowerCase();
+      for (const [key, value] of Object.entries(CATEGORY_IMAGE_MAP)) {
+        if (category.includes(key)) {
+          return value;
+        }
+      }
+    }
+
+    // Default fallback
+    return CATEGORY_IMAGE_MAP.default;
   };
 
   if (cartItems.length === 0) {
@@ -73,7 +156,7 @@ export default function Cart() {
             <div key={item.id} className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-4 flex items-center">
               <div className="relative w-24 h-24 flex-shrink-0">
                 <Image
-                  src={item.images[0]}
+                  src={getImageSrc(item)}
                   alt={item.name}
                   fill
                   className="object-cover rounded"
@@ -141,12 +224,13 @@ export default function Cart() {
             </div>
           </div>
 
-          <Link
-            href="/checkout"
-            className="block w-full bg-black text-white py-3 px-6 rounded-md text-center font-medium hover:bg-gray-800 transition-colors"
+          <button
+            onClick={handleCheckout}
+            disabled={loading}
+            className={`block w-full bg-black text-white py-3 px-6 rounded-md text-center font-medium transition-colors ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-800'}`}
           >
-            Proceed to Checkout
-          </Link>
+            {loading ? 'Processing...' : 'Proceed to Checkout'}
+          </button>
         </div>
       </div>
     </div>

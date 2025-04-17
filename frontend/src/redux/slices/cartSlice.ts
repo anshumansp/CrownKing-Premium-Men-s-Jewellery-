@@ -3,6 +3,13 @@ import { Product } from '@/types';
 import * as cartService from '@/services/cartService';
 import { isAuthenticated } from '@/utils/auth';
 import { toast } from 'react-hot-toast';
+import { 
+  addItemAsync,
+  fetchCart,
+  updateQuantityAsync,
+  removeItemAsync,
+  clearCartAsync
+} from '@/redux/api/cartApi';
 
 interface CartItem extends Product {
   quantity: number;
@@ -17,12 +24,20 @@ interface CartState {
 
 // Initial state based on localStorage if available
 const getInitialState = (): CartState => {
+  let initialState = {
+    items: [],
+    isOpen: false,
+    loading: false,
+    error: null,
+  };
+  
   if (typeof window !== 'undefined') {
     try {
       const savedCart = localStorage.getItem('cart');
       if (savedCart) {
         const parsedCart = JSON.parse(savedCart);
-        return {
+        initialState = {
+          ...initialState,
           ...parsedCart,
           loading: false,
           error: null,
@@ -33,100 +48,10 @@ const getInitialState = (): CartState => {
     }
   }
   
-  return {
-    items: [],
-    isOpen: false,
-    loading: false,
-    error: null,
-  };
+  return initialState;
 };
 
 // Async thunks for cart operations
-export const fetchCart = createAsyncThunk(
-  'cart/fetchCart',
-  async (_, { rejectWithValue }) => {
-    try {
-      // Only fetch from API if user is authenticated
-      if (!isAuthenticated()) {
-        return { items: [] };
-      }
-      
-      const response = await cartService.getCart();
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error?.message || 'Failed to fetch cart');
-    }
-  }
-);
-
-export const addItemAsync = createAsyncThunk(
-  'cart/addItemAsync',
-  async ({ productId, quantity = 1 }: { productId: string; quantity?: number }, { rejectWithValue }) => {
-    try {
-      // Only add to backend if user is authenticated
-      if (!isAuthenticated()) {
-        return null;
-      }
-      
-      const response = await cartService.addToCart({ productId, quantity });
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error?.message || 'Failed to add item to cart');
-    }
-  }
-);
-
-export const updateQuantityAsync = createAsyncThunk(
-  'cart/updateQuantityAsync',
-  async ({ itemId, quantity }: { itemId: string; quantity: number }, { rejectWithValue }) => {
-    try {
-      // Only update backend if user is authenticated
-      if (!isAuthenticated()) {
-        return null;
-      }
-      
-      const response = await cartService.updateCartItem(itemId, { quantity });
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error?.message || 'Failed to update cart item');
-    }
-  }
-);
-
-export const removeItemAsync = createAsyncThunk(
-  'cart/removeItemAsync',
-  async (itemId: string, { rejectWithValue }) => {
-    try {
-      // Only remove from backend if user is authenticated
-      if (!isAuthenticated()) {
-        return { id: itemId };
-      }
-      
-      const response = await cartService.removeCartItem(itemId);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error?.message || 'Failed to remove item from cart');
-    }
-  }
-);
-
-export const clearCartAsync = createAsyncThunk(
-  'cart/clearCartAsync',
-  async (_, { rejectWithValue }) => {
-    try {
-      // Only clear backend if user is authenticated
-      if (!isAuthenticated()) {
-        return null;
-      }
-      
-      await cartService.clearCart();
-      return null;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error?.message || 'Failed to clear cart');
-    }
-  }
-);
-
 export const syncCartWithBackend = createAsyncThunk(
   'cart/syncCartWithBackend',
   async (_, { getState, dispatch, rejectWithValue }) => {
@@ -165,6 +90,11 @@ const cartSlice = createSlice({
   initialState: getInitialState(),
   reducers: {
     addItem: (state, action: PayloadAction<Product>) => {
+      // Ensure items array exists
+      if (!state.items) {
+        state.items = [];
+      }
+      
       const product = action.payload;
       const existingItemIndex = state.items.findIndex(item => item.id === product.id);
       
@@ -178,21 +108,106 @@ const cartSlice = createSlice({
       
       // Save to localStorage
       if (typeof window !== 'undefined') {
-        localStorage.setItem('cart', JSON.stringify(state));
+        localStorage.setItem('cart', JSON.stringify({
+          items: state.items,
+          isOpen: state.isOpen
+        }));
+      }
+      
+      // Show success message
+      if (typeof window !== 'undefined') {
+        import('react-hot-toast').then(toast => {
+          toast.toast.success(`${product.name} added to cart!`);
+        }).catch(err => console.error('Could not load toast library', err));
+      }
+    },
+    
+    // Add an item by ID (simplified version when full product isn't available)
+    addItemById: (state, action: PayloadAction<{ productId: string; quantity: number }>) => {
+      // Ensure items array exists
+      if (!state.items) {
+        state.items = [];
+      }
+      
+      const { productId, quantity } = action.payload;
+      const existingItemIndex = state.items.findIndex(item => item.id === productId);
+      
+      if (existingItemIndex >= 0) {
+        // If item exists, add the specified quantity
+        state.items[existingItemIndex].quantity += quantity;
+      } else {
+        // For new items, we need to find the product data
+        // This could be improved by passing the full product object
+        // But for now, we'll just create a minimal item
+        state.items.push({ 
+          id: productId,
+          quantity: quantity,
+          name: `Product ${productId}`, // Will be updated when viewed in cart
+          price: 0, // Will be updated when viewed in cart
+          images: [],
+          category: '',
+          subCategory: '',
+          description: '',
+          specifications: { material: '', weight: '', dimensions: '', warranty: '' },
+          rating: 0,
+          reviews: 0,
+          inStock: true,
+          featured: false,
+          discount: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+      
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cart', JSON.stringify({
+          items: state.items,
+          isOpen: state.isOpen
+        }));
+      }
+      
+      // Show success message
+      if (typeof window !== 'undefined') {
+        import('react-hot-toast').then(toast => {
+          toast.toast.success("Product added to cart!");
+        }).catch(err => console.error('Could not load toast library', err));
       }
     },
     
     removeItem: (state, action: PayloadAction<string>) => {
+      // Ensure items array exists
+      if (!state.items) {
+        state.items = [];
+        return;
+      }
+      
       const productId = action.payload;
       state.items = state.items.filter(item => item.id !== productId);
       
       // Save to localStorage
       if (typeof window !== 'undefined') {
-        localStorage.setItem('cart', JSON.stringify(state));
+        localStorage.setItem('cart', JSON.stringify({
+          items: state.items,
+          isOpen: state.isOpen
+        }));
+      }
+      
+      // Show success message
+      if (typeof window !== 'undefined') {
+        import('react-hot-toast').then(toast => {
+          toast.toast.success("Item removed from cart");
+        }).catch(err => console.error('Could not load toast library', err));
       }
     },
     
     updateQuantity: (state, action: PayloadAction<{ id: string; quantity: number }>) => {
+      // Ensure items array exists
+      if (!state.items) {
+        state.items = [];
+        return;
+      }
+      
       const { id, quantity } = action.payload;
       const itemIndex = state.items.findIndex(item => item.id === id);
       
@@ -201,7 +216,10 @@ const cartSlice = createSlice({
         
         // Save to localStorage
         if (typeof window !== 'undefined') {
-          localStorage.setItem('cart', JSON.stringify(state));
+          localStorage.setItem('cart', JSON.stringify({
+            items: state.items,
+            isOpen: state.isOpen
+          }));
         }
       }
     },
@@ -211,16 +229,39 @@ const cartSlice = createSlice({
       
       // Save to localStorage
       if (typeof window !== 'undefined') {
-        localStorage.setItem('cart', JSON.stringify(state));
+        localStorage.setItem('cart', JSON.stringify({
+          items: state.items,
+          isOpen: state.isOpen
+        }));
+      }
+      
+      // Show success message
+      if (typeof window !== 'undefined') {
+        import('react-hot-toast').then(toast => {
+          toast.toast.success("Cart cleared");
+        }).catch(err => console.error('Could not load toast library', err));
       }
     },
     
     toggleCart: (state) => {
       state.isOpen = !state.isOpen;
+      
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cart', JSON.stringify({
+          items: state.items || [],
+          isOpen: state.isOpen
+        }));
+      }
     },
     
     // Synchronize cart with authenticated user
     syncCart: (state, action: PayloadAction<CartItem[]>) => {
+      // Ensure items array exists
+      if (!state.items) {
+        state.items = [];
+      }
+      
       // Merge local cart with user's cart from database
       const mergedItems: CartItem[] = [...state.items];
       
@@ -243,7 +284,10 @@ const cartSlice = createSlice({
       
       // Save to localStorage
       if (typeof window !== 'undefined') {
-        localStorage.setItem('cart', JSON.stringify(state));
+        localStorage.setItem('cart', JSON.stringify({
+          items: state.items,
+          isOpen: state.isOpen
+        }));
       }
     }
   },
@@ -399,7 +443,8 @@ export const {
   updateQuantity, 
   clearCart, 
   toggleCart,
-  syncCart
+  syncCart,
+  addItemById
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { StarIcon, ShoppingCartIcon, TruckIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
@@ -8,8 +8,10 @@ import { Product } from '@/types';
 import ProductCard from '@/components/ProductCard';
 import WishlistButton from '@/components/WishlistButton';
 import { useDispatch } from 'react-redux';
-import { addItem, addItemAsync } from '@/redux/slices/cartSlice';
+import { addItem } from '@/redux/slices/cartSlice';
+import { addItemAsync } from '@/redux/api/cartApi';
 import { toast } from 'react-hot-toast';
+import { AppDispatch } from '@/redux/store';
 
 interface ProductClientProps {
     product: Product;
@@ -37,7 +39,20 @@ const CATEGORY_IMAGE_MAP = {
 export function ProductClient({ product }: ProductClientProps) {
     const [quantity, setQuantity] = useState(1);
     const [activeTab, setActiveTab] = useState('description');
-    const dispatch = useDispatch();
+    const dispatch = useDispatch<AppDispatch>();
+    const [loading, setLoading] = useState(false);
+    const [addedToCart, setAddedToCart] = useState(false);
+
+    // Reset addedToCart state after 3 seconds
+    useEffect(() => {
+        if (addedToCart) {
+            const timer = setTimeout(() => {
+                setAddedToCart(false);
+            }, 3000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [addedToCart]);
 
     // Handle image errors
     const [imageError, setImageError] = useState(false);
@@ -67,13 +82,42 @@ export function ProductClient({ product }: ProductClientProps) {
     };
 
     const handleAddToCart = () => {
-        // Add to redux state
-        dispatch(addItem(product));
+        try {
+            setLoading(true);
 
-        // Also try to add to backend if user is authenticated
-        dispatch(addItemAsync({ productId: product.id, quantity }));
+            // Add to redux state - handles local storage
+            if (product && product.id) {
+                dispatch(addItem(product));
 
-        toast.success(`${product.name} added to cart!`);
+                // Also try to add to backend if user is authenticated
+                dispatch(addItemAsync({
+                    productId: product.id,
+                    quantity
+                }))
+                    .then(() => {
+                        // Success is already handled by the UI update
+                    })
+                    .catch((error: unknown) => {
+                        console.error("Error syncing with backend:", error);
+                        // We already show a success toast for the local cart addition,
+                        // so we don't need to show an error for the backend sync
+                    });
+
+                // Show success message with toast
+                toast.success(`${product.name} added to cart!`);
+
+                // Update button state
+                setAddedToCart(true);
+            } else {
+                console.error("Invalid product data:", product);
+                toast.error("Couldn't add product to cart. Invalid product data.");
+            }
+        } catch (error) {
+            console.error("Error adding item to cart:", error);
+            toast.error("Couldn't add product to cart. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     // Determine the appropriate image URL
@@ -194,12 +238,13 @@ export function ProductClient({ product }: ProductClientProps) {
 
                     {/* Add to Cart Button */}
                     <div className="mb-8">
-                        <button
+                        <button 
                             onClick={handleAddToCart}
-                            className="w-full bg-brand-primary text-white py-3 px-6 hover:bg-brand-blue-light transition-colors flex items-center justify-center"
+                            disabled={loading}
+                            className={`w-full py-3 px-6 flex items-center justify-center font-medium transition-colors ${loading ? 'bg-gray-400 cursor-not-allowed' : addedToCart ? 'bg-green-600 text-white' : 'bg-brand-primary text-white hover:bg-brand-blue-light'}`}
                         >
                             <ShoppingCartIcon className="h-5 w-5 mr-2" />
-                            Add To Cart
+                            {loading ? 'Adding...' : addedToCart ? 'Added to Cart ✓' : 'Add To Cart'}
                         </button>
                     </div>
 
