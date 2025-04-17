@@ -4,13 +4,13 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-    ShoppingCartIcon,
     MagnifyingGlassIcon,
     UserIcon,
     ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import WishlistCount from './WishlistCount';
+import CartCount from './CartCount';
 
 export default function Navbar() {
     const { user, isAuthenticated, logout } = useAuth();
@@ -75,10 +75,7 @@ export default function Navbar() {
 
                     <WishlistCount />
 
-                    <Link href="/cart" className="p-2 hover:text-gray-600 relative" aria-label="Cart">
-                        <ShoppingCartIcon className="h-5 w-5" />
-                        <span className="absolute -top-1 -right-1 bg-black text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">0</span>
-                    </Link>
+                    <CartCount />
 
                     {isAuthenticated ? (
                         <div className="relative">

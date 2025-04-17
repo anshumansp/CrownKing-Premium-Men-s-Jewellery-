@@ -5,6 +5,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { WishlistProvider } from '@/contexts/WishlistContext';
+import { LoadingProvider } from '@/contexts/LoadingContext';
+import { ReduxProvider } from '@/redux/provider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -30,15 +32,19 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body className="flex flex-col min-h-screen">
-        <AuthProvider>
-          <WishlistProvider>
-            <Navbar />
-            <main className="flex-grow">
-              {children}
-            </main>
-            <Footer />
-          </WishlistProvider>
-        </AuthProvider>
+        <ReduxProvider>
+          <AuthProvider>
+            <LoadingProvider>
+              <WishlistProvider>
+                <Navbar />
+                <main className="flex-grow">
+                  {children}
+                </main>
+                <Footer />
+              </WishlistProvider>
+            </LoadingProvider>
+          </AuthProvider>
+        </ReduxProvider>
       </body>
     </html>
   );

@@ -1,14 +1,15 @@
 'use client'; // Mark as client component for form handling
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/services/authService';
 
-export default function Login() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -125,5 +126,21 @@ export default function Login() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function Login() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center w-full max-w-md mx-auto mt-20">
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold mb-2">Welcome Back</h2>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

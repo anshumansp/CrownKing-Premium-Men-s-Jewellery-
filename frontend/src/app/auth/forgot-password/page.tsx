@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { authService } from '@/services/authService';
 
-export default function ForgotPassword() {
+function ForgotPasswordForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
     const [isError, setIsError] = useState(false);
@@ -94,5 +95,21 @@ export default function ForgotPassword() {
                 </div>
             </div>
         </div>
+    );
+}
+
+// Main component with Suspense boundary
+export default function ForgotPassword() {
+    return (
+        <Suspense fallback={
+            <div className="flex flex-col items-center w-full max-w-md mx-auto mt-20">
+                <div className="mb-8 text-center">
+                    <h2 className="text-3xl font-bold mb-2">Forgot Password</h2>
+                    <p className="text-gray-600">Loading...</p>
+                </div>
+            </div>
+        }>
+            <ForgotPasswordForm />
+        </Suspense>
     );
 } 

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Product } from '@/types';
 import WishlistButton from './WishlistButton';
+import AddToCartButton from './AddToCartButton';
 
 interface ProductCardProps {
     product: Product;
@@ -35,8 +36,9 @@ export default function ProductCard({ product }: ProductCardProps) {
                             {product.discount}% OFF
                         </div>
                     )}
-                    <div className="absolute top-2 right-2">
+                    <div className="absolute top-2 right-2 flex gap-2">
                         <WishlistButton product={product} mini iconSize={20} />
+                        <AddToCartButton product={product} mini iconSize={20} showText={false} />
                     </div>
                 </Link>
             </div>
@@ -70,17 +72,19 @@ export default function ProductCard({ product }: ProductCardProps) {
                     </span>
                 </div>
 
-                <div className="flex items-center">
-                    <span className="text-base font-semibold text-brand-primary">
-                        {formatPrice(product.discount > 0 ?
-                            calculateDiscountedPrice(product.price, product.discount) :
-                            product.price)}
-                    </span>
-                    {product.discount > 0 && (
-                        <span className="ml-2 text-sm text-gray-500 line-through">
-                            {formatPrice(product.price)}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <span className="text-base font-semibold text-brand-primary">
+                            {formatPrice(product.discount > 0 ?
+                                calculateDiscountedPrice(product.price, product.discount) :
+                                product.price)}
                         </span>
-                    )}
+                        {product.discount > 0 && (
+                            <span className="ml-2 text-sm text-gray-500 line-through">
+                                {formatPrice(product.price)}
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

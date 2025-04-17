@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authService } from '@/services/authService';
 
-export default function ResetPassword() {
+function ResetPasswordForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get('token');
@@ -130,5 +130,21 @@ export default function ResetPassword() {
                 )}
             </div>
         </div>
+    );
+}
+
+// Main component with Suspense boundary
+export default function ResetPassword() {
+    return (
+        <Suspense fallback={
+            <div className="flex flex-col items-center w-full max-w-md mx-auto mt-20">
+                <div className="mb-8 text-center">
+                    <h2 className="text-3xl font-bold mb-2">Reset Password</h2>
+                    <p className="text-gray-600">Loading...</p>
+                </div>
+            </div>
+        }>
+            <ResetPasswordForm />
+        </Suspense>
     );
 } 
