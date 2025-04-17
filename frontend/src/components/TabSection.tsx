@@ -11,17 +11,24 @@ interface Tab {
 interface TabSectionProps {
     tabs: Tab[];
     activeTab: string;
-    onChange: (tabId: string) => void;
+    onChange?: (tabId: string) => void;
+    onTabChange?: (tabId: string) => void;
 }
 
-const TabSection: React.FC<TabSectionProps> = ({ tabs, activeTab, onChange }) => {
+const TabSection: React.FC<TabSectionProps> = ({ tabs, activeTab, onChange, onTabChange }) => {
+    const handleTabChange = (tabId: string) => {
+        // Call whichever callback function is provided
+        onChange?.(tabId);
+        onTabChange?.(tabId);
+    };
+
     return (
         <div className="flex justify-center mb-12 border-b border-gray-200">
             <div className="inline-flex space-x-8">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
-                        onClick={() => onChange(tab.id)}
+                        onClick={() => handleTabChange(tab.id)}
                         className={`py-4 text-sm font-medium relative ${activeTab === tab.id ? 'text-brand-primary' : 'text-gray-500 hover:text-brand-blue-light'
                             }`}
                     >

@@ -5,12 +5,34 @@ import Link from 'next/link';
 import { Product } from '@/types';
 import WishlistButton from './WishlistButton';
 import AddToCartButton from './AddToCartButton';
+import { useState } from 'react';
+
+// Define image mappings and fallbacks
+const CATEGORY_IMAGE_MAP = {
+    ring: '/jewe5.jpg',
+    rings: '/jewe5.jpg',
+    bracelet: '/jewe2.webp',
+    bracelets: '/jewe2.webp',
+    necklace: '/jewe1.webp',
+    necklaces: '/jewe1.webp',
+    pendant: '/jewe8.webp',
+    pendants: '/jewe8.webp',
+    watch: '/jewe12.webp',
+    watches: '/jewe12.webp',
+    accessory: '/jewe9.jpg',
+    accessories: '/jewe9.jpg',
+    earring: '/jewe6.avif',
+    earrings: '/jewe6.avif',
+    default: '/jewe1.webp' // Default fallback image
+};
 
 interface ProductCardProps {
     product: Product;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+    const [imageError, setImageError] = useState(false);
+
     const formatPrice = (price: number) => {
         return '₹' + price.toLocaleString('en-IN');
     };
@@ -21,15 +43,43 @@ export default function ProductCard({ product }: ProductCardProps) {
         return Math.round(price - discountAmount);
     };
 
+    // Handle image errors
+    const handleImageError = () => {
+        setImageError(true);
+    };
+
+    // Determine the appropriate image URL
+    let imageUrl = CATEGORY_IMAGE_MAP.default; // Default fallback
+
+    if (!imageError && product.images && product.images.length > 0) {
+        if (product.images[0].includes('example.com')) {
+            // Use category-based placeholder image if possible
+            const category = product.category.toLowerCase();
+
+            // Find a matching category image
+            for (const [key, value] of Object.entries(CATEGORY_IMAGE_MAP)) {
+                if (category.includes(key)) {
+                    imageUrl = value;
+                    break;
+                }
+            }
+        } else {
+            // Use the original image URL if it's not from example.com
+            imageUrl = product.images[0];
+        }
+    }
+
     return (
         <div className="group">
             <div className="bg-white overflow-hidden mb-4">
                 <Link href={`/products/${product.id}`} className="block relative aspect-square">
                     <Image
-                        src={product.images[0]}
+                        src={imageUrl}
                         alt={product.name}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={handleImageError}
+                        priority={true}
                     />
                     {product.discount > 0 && (
                         <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-medium px-2 py-1">

@@ -307,7 +307,8 @@ interface PageProps {
 }
 
 export default async function ProductPage({ params }: PageProps) {
-    const product = products.find(p => p.id === params.id);
+    const id = params.id;
+    const product = products.find(p => p.id === id);
 
     if (!product) {
         notFound();
@@ -321,7 +322,7 @@ export default async function ProductPage({ params }: PageProps) {
                 <h2 className="text-2xl font-bold mb-8">Similar Products</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {products
-                        .filter(p => p.id !== params.id && p.category === product.category)
+                        .filter(p => p.id !== id && p.category === product.category)
                         .slice(0, 4)
                         .map((similarProduct) => (
                             <ProductCard key={similarProduct.id} product={similarProduct} />
@@ -340,10 +341,20 @@ export default async function ProductPage({ params }: PageProps) {
     );
 }
 
-export async function generateMetadata(props, parent) {
-    const params = await props.params;
-    const searchParams = await props.searchParams;
-    const { id } = params;
-    // rest of your code
+export async function generateMetadata({ params }: { params: { id: string } }) {
+    const id = params.id;
+    const product = products.find(p => p.id === id);
+
+    if (!product) {
+        return {
+            title: 'Product Not Found',
+            description: 'The requested product could not be found.'
+        };
+    }
+
+    return {
+        title: product.name,
+        description: product.description,
+    };
 }
 

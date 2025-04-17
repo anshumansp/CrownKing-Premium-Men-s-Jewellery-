@@ -7,14 +7,44 @@ import { StarIcon, ShoppingCartIcon, TruckIcon, ShieldCheckIcon } from '@heroico
 import { Product } from '@/types';
 import ProductCard from '@/components/ProductCard';
 import WishlistButton from '@/components/WishlistButton';
+import { useDispatch } from 'react-redux';
+import { addItem, addItemAsync } from '@/redux/slices/cartSlice';
+import { toast } from 'react-hot-toast';
 
 interface ProductClientProps {
     product: Product;
 }
 
+// Define image mappings and fallbacks
+const CATEGORY_IMAGE_MAP = {
+    ring: '/jewe5.jpg',
+    rings: '/jewe5.jpg',
+    bracelet: '/jewe2.webp',
+    bracelets: '/jewe2.webp',
+    necklace: '/jewe1.webp',
+    necklaces: '/jewe1.webp',
+    pendant: '/jewe8.webp',
+    pendants: '/jewe8.webp',
+    watch: '/jewe12.webp',
+    watches: '/jewe12.webp',
+    accessory: '/jewe9.jpg',
+    accessories: '/jewe9.jpg',
+    earring: '/jewe6.avif',
+    earrings: '/jewe6.avif',
+    default: '/jewe1.webp' // Default fallback image
+};
+
 export function ProductClient({ product }: ProductClientProps) {
     const [quantity, setQuantity] = useState(1);
     const [activeTab, setActiveTab] = useState('description');
+    const dispatch = useDispatch();
+
+    // Handle image errors
+    const [imageError, setImageError] = useState(false);
+
+    const handleImageError = () => {
+        setImageError(true);
+    };
 
     const formatPrice = (price: number) => {
         return '₹' + price.toLocaleString('en-IN');
@@ -36,16 +66,49 @@ export function ProductClient({ product }: ProductClientProps) {
         }
     };
 
+    const handleAddToCart = () => {
+        // Add to redux state
+        dispatch(addItem(product));
+
+        // Also try to add to backend if user is authenticated
+        dispatch(addItemAsync({ productId: product.id, quantity }));
+
+        toast.success(`${product.name} added to cart!`);
+    };
+
+    // Determine the appropriate image URL
+    let imageUrl = CATEGORY_IMAGE_MAP.default; // Default fallback
+
+    if (!imageError && product.images && product.images.length > 0) {
+        if (product.images[0].includes('example.com')) {
+            // Use category-based placeholder image if possible
+            const category = product.category.toLowerCase();
+
+            // Find a matching category image
+            for (const [key, value] of Object.entries(CATEGORY_IMAGE_MAP)) {
+                if (category.includes(key)) {
+                    imageUrl = value;
+                    break;
+                }
+            }
+        } else {
+            // Use the original image URL if it's not from example.com
+            imageUrl = product.images[0];
+        }
+    }
+
     return (
         <div className="container mx-auto px-4 pb-16">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
                 {/* Product Image */}
                 <div className="relative aspect-square md:h-auto bg-white">
                     <Image
-                        src={product.images[0]}
+                        src={imageUrl}
                         alt={product.name}
                         fill
                         className="object-cover"
+                        onError={handleImageError}
+                        priority={true}
                     />
                     {product.discount > 0 && (
                         <div className="absolute top-4 left-4 bg-red-600 text-white text-sm font-medium px-2 py-1">
@@ -131,7 +194,10 @@ export function ProductClient({ product }: ProductClientProps) {
 
                     {/* Add to Cart Button */}
                     <div className="mb-8">
-                        <button className="w-full bg-brand-primary text-white py-3 px-6 hover:bg-brand-blue-light transition-colors flex items-center justify-center">
+                        <button
+                            onClick={handleAddToCart}
+                            className="w-full bg-brand-primary text-white py-3 px-6 hover:bg-brand-blue-light transition-colors flex items-center justify-center"
+                        >
                             <ShoppingCartIcon className="h-5 w-5 mr-2" />
                             Add To Cart
                         </button>
