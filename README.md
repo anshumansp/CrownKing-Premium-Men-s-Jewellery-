@@ -11,8 +11,7 @@ CrownKing represents the convergence of modern e-commerce and artificial intelli
 This platform is built on an AI-first philosophy, integrating multiple advanced technologies:
 
 - **LLM-Powered Shopping Assistant**: Intelligent chatbot utilizing Large Language Models via Groq's high-performance API
-- **Retrieval Augmented Generation (RAG)**: Enhanced customer service with product-aware AI responses
-- **Vector Database Integration**: Semantic search capabilities using embeddings for intelligent product recommendations
+- **Cache Augmented Generation (CAG)**: Enhanced customer service with product-aware AI responses
 - **Multi-Modal AI Processing**: Handling text, image, and structured data for comprehensive understanding
 - **Real-Time Inference**: Sub-second response times for natural conversational flow
 - **Continuous Learning System**: AI models that improve through interaction patterns
@@ -23,49 +22,26 @@ This platform is built on an AI-first philosophy, integrating multiple advanced 
 - **Next.js 15 App Router**: Server components and streaming for optimized rendering
 - **React 19 Concurrent Features**: Leveraging the latest React concurrent mode capabilities
 - **Redux Toolkit & RTK Query**: Modern state management with intelligent API caching
-- **TanStack Query v5**: Advanced data synchronization and caching
 - **Tailwind CSS with Custom Design System**: Utility-first styling with brand-specific extensions
-- **Framer Motion & GSAP**: Advanced physics-based animations and micro-interactions
 - **TypeScript 5**: Full type safety with strict mode enforcement
 - **Styled Components & CSS Modules**: Strategic component styling where appropriate
 
 ### State-of-the-Art Backend
 - **Express.js with TypeScript**: Strongly-typed API development
-- **GraphQL with Apollo Server**: Flexible data querying alongside REST endpoints
-- **WebSockets**: Real-time communication for live inventory updates
-- **Serverless Functions**: Cloud functions for specific tasks
-- **PostgreSQL with Prisma ORM**: Type-safe database interactions with migrations
+- **PostgreSQL with Sequelize ORM**: Type-safe database interactions with migrations
 - **Redis Cache Layer**: High-performance in-memory data store for session and product caching
 - **Stripe API with Webhooks**: Comprehensive payment processing with real-time notifications
-- **JWT with Refresh Tokens**: Secure, stateless authentication with session refresh
+- **JWT and OAuth Tokens**: Secure, stateless authentication with session refresh
 
 ### AI & Machine Learning Stack
-- **LangChain Framework**: Composable primitives for AI application development
+- **LangChain/Langgraph Framework**: Composable primitives for AI application development
 - **Groq Inference API**: Ultra-fast LLM inference for real-time conversations
 - **OpenAI Function Calling**: Structured AI outputs for predictable system integration
-- **Pinecone Vector DB**: Similarity search for product recommendations
-- **TensorFlow Lite**: On-device ML capabilities for performance optimization
-- **HuggingFace Transformers**: Access to state-of-the-art model implementations
-- **Custom Fine-Tuned Models**: Domain-adapted models for jewelry expertise
-- **LlamaIndex**: Data framework for connecting LLMs with external data
 
 ### Cloud & DevOps Excellence
-- **Vercel Edge Functions**: Globally distributed serverless compute
 - **Docker Containerization**: Consistent environment across development and production
 - **CI/CD Pipeline**: GitHub Actions for automated testing and deployment
 - **Infrastructure as Code**: Terraform for cloud resource provisioning
-- **Monitoring Stack**: Prometheus, Grafana, and Sentry for comprehensive system visibility
-- **A/B Testing Framework**: Controlled experiments for UX optimization
-- **Performance Monitoring**: Web Vitals tracking with real user monitoring
-
-### Testing & Quality Assurance
-- **Jest & React Testing Library**: Component and unit testing
-- **Cypress**: End-to-end testing with real browser interaction
-- **Playwright**: Cross-browser testing for consistent experiences
-- **Storybook**: Component development and documentation
-- **ESLint & Prettier**: Code quality and formatting enforcement
-- **TypeScript Path Aliases**: Clean import organization
-- **Husky & lint-staged**: Pre-commit quality checks
 
 ## 🎯 For Business Stakeholders
 
@@ -75,10 +51,9 @@ This platform demonstrates how AI and advanced web technologies deliver tangible
 - **Intelligent Customer Insights**: AI-driven analytics reveal shopping patterns and preferences
 - **Personalization Engine**: Dynamic product recommendations based on browsing patterns and purchase history
 - **Automated Customer Support**: 24/7 AI assistance reducing support overhead while maintaining high satisfaction
-- **Fraud Detection**: ML algorithms identifying suspicious transaction patterns
 - **Inventory Optimization**: Predictive models for stock management
 
-## ✨ User Experience Innovations
+## ✨ User Experience Innovations (to be Added Further)
 
 ### AI-Enhanced Shopping
 - **Voice Search Capability**: Natural language product discovery
