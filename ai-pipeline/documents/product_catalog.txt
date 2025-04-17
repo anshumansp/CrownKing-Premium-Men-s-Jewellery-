@@ -1,0 +1,40 @@
+# CrownKing Product Catalog
+
+## Men's Rings
+- Gold Crown Ring: $249.99
+- Silver Royal Signet: $149.99
+- Diamond Encrusted Band: $499.99
+
+## Bracelets
+- Gold Chain Bracelet: $199.99
+- Silver Cuff: $129.99
+- Leather and Gold Detail: $99.99
+
+## Necklaces
+- Gold Crown Pendant: $299.99
+- Silver Chain with Pendant: $179.99
+
+## Watches
+- Luxury Automatic Gold Watch: $799.99
+- Stainless Steel Chronograph: $349.99
+
+## Shipping Information
+- Free shipping on orders over $100
+- International shipping available
+- 30-day return policy
+
+## FAQs
+Q: What sizes are available for rings?
+A: We offer sizes 7-13 for all our rings.
+
+Q: Do you offer gift wrapping?
+A: Yes, premium gift wrapping is available for $5.99.
+
+Q: How do I care for gold jewelry?
+A: Clean with a soft cloth and mild soap. Avoid harsh chemicals and store in a jewelry box.
+
+Q: Are your diamonds ethically sourced?
+A: Yes, all our diamonds are conflict-free and ethically sourced with certification.
+
+Q: Can I get my jewelry engraved?
+A: Yes, we offer custom engraving services for an additional $25. 
