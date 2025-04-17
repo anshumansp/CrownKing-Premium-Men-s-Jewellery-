@@ -1,0 +1,11 @@
+# Dependencies to ignore from build (they'll be installed by render-build.sh)
+node_modules
+.git
+.github
+logs
+dist
+
+# Development files to ignore
+*.log
+.env.local
+.env.development 

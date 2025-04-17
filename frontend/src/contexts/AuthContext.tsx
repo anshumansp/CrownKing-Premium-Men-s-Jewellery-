@@ -10,8 +10,8 @@ const API_URL = process.env.API_URL || 'http://localhost:5000/api';
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
-    login: (email: string, password: string) => Promise<void>;
-    register: (name: string, email: string, password: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<AuthResponse | void>;
+    register: (name: string, email: string, password: string) => Promise<AuthResponse | void>;
     logout: () => void;
     forgotPassword: (email: string) => Promise<void>;
     resetPassword: (token: string, password: string) => Promise<void>;

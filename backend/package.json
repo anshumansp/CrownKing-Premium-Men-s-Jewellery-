@@ -8,12 +8,13 @@
   },
   "scripts": {
     "start": "node dist/server.js",
-    "build": "node scripts/install-types.js && tsc",
+    "build": "node scripts/install-types.js && tsc --skipLibCheck",
     "dev": "ts-node src/server.ts",
     "dev:skip-db": "cross-env SKIP_DB=true ts-node src/server.ts",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write src/**/*.{ts,js}",
-    "migrate": "ts-node src/migrations/migrate.ts"
+    "migrate": "ts-node src/migrations/migrate.ts",
+    "postinstall": "node scripts/install-types.js"
   },
   "keywords": [],
   "author": "",

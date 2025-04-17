@@ -136,7 +136,15 @@ const mockOrders: Record<string, Order> = {
     }
 };
 
-export default function OrderTracking({ params }: { params: { id: string } }) {
+type OrderTrackingParams = {
+    id: string;
+};
+
+type OrderTrackingProps = {
+    params: OrderTrackingParams;
+};
+
+export default function OrderTracking({ params }: OrderTrackingProps) {
     const { id } = params;
     const { isLoading: authLoading, isAuthenticated } = useAuth();
     const dispatch = useDispatch();

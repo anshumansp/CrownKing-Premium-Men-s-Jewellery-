@@ -27,7 +27,19 @@ const packageWithOwnTypes = ['ioredis', 'stripe'];
 
 console.log('Checking for missing type declarations...');
 
-// Function to check if package is installed
+// Install all type packages regardless of check to ensure they're available during build
+console.log(`Installing all necessary type packages: ${typePackages.join(', ')}`);
+try {
+  execSync(`npm install --save-dev ${typePackages.join(' ')}`, {
+    stdio: 'inherit',
+  });
+  console.log('Type packages installed successfully');
+} catch (error) {
+  console.error('Failed to install type packages:', error);
+  // Don't exit with error - let the build continue with what's available
+}
+
+// Install packages with their own types if not already in package.json
 function isPackageInstalled(packageName) {
   try {
     const packageJsonPath = path.resolve(__dirname, '../package.json');
@@ -43,24 +55,7 @@ function isPackageInstalled(packageName) {
   }
 }
 
-// Install missing type packages
-const missingTypePackages = typePackages.filter(
-  (pkg) => !isPackageInstalled(pkg)
-);
-if (missingTypePackages.length > 0) {
-  console.log(
-    `Installing missing type packages: ${missingTypePackages.join(', ')}`
-  );
-  try {
-    execSync(`npm install --save-dev ${missingTypePackages.join(' ')}`, {
-      stdio: 'inherit',
-    });
-  } catch (error) {
-    console.error('Failed to install type packages:', error);
-  }
-}
-
-// Install packages with their own types
+// Check and install missing packages with their own types
 const missingPackages = packageWithOwnTypes.filter(
   (pkg) => !isPackageInstalled(pkg)
 );

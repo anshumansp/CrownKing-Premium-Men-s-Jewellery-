@@ -1,54 +1,96 @@
-# Deployment Guide: Fixing TypeScript Build Errors
+# Deployment Guide for CrownKing Backend
 
-This guide addresses common TypeScript build errors in the CrownKing backend project.
+This guide provides instructions for deploying the CrownKing backend to Render.com.
 
-## Common TypeScript Build Errors and Solutions
+## Recommended Render.com Configuration
 
-### Missing Type Declarations
+### Web Service Setup
 
-Many build errors occur because TypeScript can't find type declarations for Node.js modules. This can be fixed by installing the appropriate `@types` packages.
-
-```bash
-npm install --save-dev @types/express @types/cors @types/express-session @types/passport @types/passport-google-oauth20 @types/jsonwebtoken @types/morgan @types/nodemailer
+1. **Repository**: https://github.com/anshumansp/CrownKing-Premium-Men-s-Jewellery-
+2. **Branch**: main
+3. **Root Directory**: backend
+4. **Build Command**: 
+```
+chmod +x render-build.sh && ./render-build.sh
+```
+5. **Start Command**: 
+```
+chmod +x render-start.sh && ./render-start.sh
 ```
 
-### For ioredis
+### Alternate Build Command (if render-build.sh isn't available)
 
-The ioredis package provides its own types, so just install the package:
-
-```bash
-npm install ioredis
+```
+npm install && npm install --save-dev @types/express @types/cors @types/express-session @types/passport @types/passport-google-oauth20 @types/jsonwebtoken @types/morgan @types/nodemailer @types/sequelize && npm run build
 ```
 
-### For Express.User Type Extension
+### Environment Variables
 
-To fix the `Express.User` error in passport.ts, we've created a custom type declaration file at `src/types/express.d.ts` that extends Express types.
+Ensure the following environment variables are configured in your Render dashboard:
 
-### Fixing Parameter Type Errors
-
-For parameters without types (like error callbacks), add explicit type annotations:
-
-```typescript
-// Example
-redisClient.on('error', (err: Error) => {
-  logger.error(`Redis error: ${err}`);
-});
+```
+NODE_ENV=production
+PORT=3000
+DATABASE_URL=<your-postgres-db-url>
+JWT_SECRET=<your-jwt-secret>
+GOOGLE_CLIENT_ID=<your-google-client-id>
+GOOGLE_CLIENT_SECRET=<your-google-client-secret>
+REDIRECT_URL=<your-frontend-url>/auth/google/callback
+CORS_ORIGIN=<your-frontend-url>
 ```
 
-## Build Process
+## Troubleshooting Common Deployment Issues
 
-When deploying to Render, ensure:
+### TypeScript Build Errors
 
-1. The build command is set to `npm run build`
-2. The start command is set to `npm start` 
-3. Environment variables are properly configured
+If you encounter TypeScript build errors during deployment:
 
-## Pre-deployment Check
+1. Ensure all type declarations are installed correctly:
+   ```bash
+   npm install --save-dev @types/express @types/cors @types/express-session @types/passport @types/passport-google-oauth20 @types/jsonwebtoken @types/morgan @types/nodemailer @types/sequelize
+   ```
 
-Before deploying, run these commands locally to catch any type errors:
+2. Verify the render-build.sh script has executable permissions:
+   ```bash
+   chmod +x render-build.sh
+   ```
 
-```bash
-npm run build
-```
+3. Try forcing the build with skipLibCheck flag:
+   ```bash
+   npx tsc --skipLibCheck
+   ```
 
-If any errors occur, fix them using the guidelines above before deploying. 
+### Database Connection Issues
+
+1. Verify your DATABASE_URL is correctly formatted:
+   ```
+   postgres://username:password@host:port/database
+   ```
+
+2. Make sure the database service is running and accessible from your Render web service.
+
+3. Add an explicit `retries` option in your database connection code.
+
+## Manual Deployment
+
+If you need to deploy manually:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/anshumansp/CrownKing-Premium-Men-s-Jewellery-
+   ```
+
+2. Navigate to the backend directory:
+   ```bash
+   cd CrownKing-Premium-Men-s-Jewellery-/backend
+   ```
+
+3. Run the render build script:
+   ```bash
+   chmod +x render-build.sh && ./render-build.sh
+   ```
+
+4. Start the application:
+   ```bash
+   npm run start
+   ``` 

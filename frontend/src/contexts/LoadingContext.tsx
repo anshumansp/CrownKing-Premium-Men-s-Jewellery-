@@ -2,40 +2,60 @@
 
 import React, { createContext, useContext, useEffect, useState, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useRouter } from 'next/navigation';
-import NProgress from 'nprogress';
+import dynamic from 'next/dynamic';
 
-// Initialize NProgress
-NProgress.configure({ showSpinner: false });
+// Only import NProgress on the client side
+let NProgress: any = null;
 
+// Context type definition
 interface LoadingContextType {
     isLoading: boolean;
     startLoading: () => void;
     stopLoading: () => void;
 }
 
-const LoadingContext = createContext<LoadingContextType | undefined>(undefined);
+// Create the context with a default value that won't throw during SSR
+const LoadingContext = createContext<LoadingContextType>({
+    isLoading: false,
+    startLoading: () => { },
+    stopLoading: () => { },
+});
 
+// Client-only content wrapper that uses NProgress
 function LoadingProviderContent({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(false);
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const router = useRouter();
+
+    // Initialize NProgress only on the client side
+    useEffect(() => {
+        // Dynamic import of NProgress
+        import('nprogress').then((module) => {
+            NProgress = module.default;
+            NProgress.configure({ showSpinner: false });
+        });
+    }, []);
 
     // Manual navigation loading control
     const startLoading = () => {
-        NProgress.start();
+        if (NProgress) {
+            NProgress.start();
+        }
         setIsLoading(true);
     };
 
     const stopLoading = () => {
-        NProgress.done();
+        if (NProgress) {
+            NProgress.done();
+        }
         setIsLoading(false);
     };
 
     useEffect(() => {
-        // Listen for route changes at the DOM level since Next.js
-        // doesn't expose router events in the App Router
+        // Only run on client
+        if (typeof window === 'undefined') return;
+
+        // Listen for route changes at the DOM level
         const handleRouteChangeStart = () => {
             startLoading();
         };
@@ -92,18 +112,27 @@ function LoadingProviderContent({ children }: { children: React.ReactNode }) {
     );
 }
 
+// Create a client-only version of the LoadingProvider
+const ClientLoadingProvider = dynamic(() =>
+    Promise.resolve(({ children }: { children: React.ReactNode }) => (
+        <LoadingProviderContent>{children}</LoadingProviderContent>
+    )),
+    { ssr: false }
+);
+
+// Main export that works in SSR
 export function LoadingProvider({ children }: { children: React.ReactNode }) {
-    return (
-        <Suspense fallback={null}>
-            <LoadingProviderContent>{children}</LoadingProviderContent>
-        </Suspense>
-    );
+    return <ClientLoadingProvider>{children}</ClientLoadingProvider>;
 }
 
+// Hook to use the loading context
 export function useLoading() {
     const context = useContext(LoadingContext);
-    if (context === undefined) {
+
+    // Only throw error on client-side to avoid SSR issues
+    if (context === undefined && typeof window !== 'undefined') {
         throw new Error('useLoading must be used within a LoadingProvider');
     }
+
     return context;
 } 

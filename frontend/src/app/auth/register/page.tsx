@@ -17,7 +17,7 @@ function RegisterForm() {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,14 +29,14 @@ function RegisterForm() {
       return;
     }
 
-    setIsLoading(true);
+    setIsSubmitting(true);
     try {
       await register(formData.fullName, formData.email, formData.password);
       router.push('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -121,10 +121,10 @@ function RegisterForm() {
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isSubmitting}
             className="w-full bg-black text-white py-3 rounded-md font-medium hover:bg-gray-800 transition-colors mb-4 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
+            {isSubmitting ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
           </button>
 
           <p className="text-xs text-gray-500 text-center mb-6">
