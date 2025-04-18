@@ -1,8 +1,15 @@
 # CrownKing - AI-Powered Premium Jewelry E-commerce Platform
 
-![CrownKing Logo](frontend/public/CrownKing.svg)
+<img src="frontend/public/CrownKing.svg" alt="CrownKing Logo" style="background-color: #f5f5f5; padding: 10px; border-radius: 5px;" width="250"/>
 
-## 🌟 Innovation Showcase
+<div align="center">
+  <img src="./public/image.png" alt="CrownKing Product Showcase" width="32%" />
+  <img src="./public/image2.png" alt="CrownKing Product Detail" width="32%" />
+  <img src="./public/image3.png" alt="CrownKing Checkout" width="32%" />
+  <img src="./public/image4.png" alt="AI Chatbot" width="32%" />
+</div>
+
+## 🌟 Showcase
 
 CrownKing represents the convergence of modern e-commerce and artificial intelligence, demonstrating how cutting-edge technologies can elevate the online shopping experience. This project serves as a comprehensive showcase of full-stack AI development applied to a real-world business domain.
 
