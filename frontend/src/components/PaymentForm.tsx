@@ -27,7 +27,7 @@ export default function PaymentForm({ amount, orderId, onSuccess, onError }: Pay
 
         try {
             // Create payment intent
-            const response = await fetch('http://localhost:5000/api/payments/create-payment-intent', {
+            const response = await fetch(`${process.env.API_URL}/payments/create-payment-intent`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

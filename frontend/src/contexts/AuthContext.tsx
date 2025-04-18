@@ -6,7 +6,7 @@ import { User, AuthResponse } from '@/types';
 import { useLoading } from './LoadingContext';
 import { saveToken, saveUser, getToken, getUser, clearTokens } from '@/utils/auth';
 
-const API_URL = process.env.API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.API_URL;
 
 // Cache settings
 const AUTH_CACHE_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
