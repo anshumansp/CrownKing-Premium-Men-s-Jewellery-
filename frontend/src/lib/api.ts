@@ -2,7 +2,10 @@ import axios from 'axios';
 import { getToken, clearTokens } from '@/utils/auth';
 import { toast } from 'react-hot-toast';
 
-const API_URL = process.env.API_URL || 'http://localhost:5000/api';
+// Use NEXT_PUBLIC_ prefixed env vars or default to production URL if in production
+const isProd = process.env.NODE_ENV === 'production';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 
+                (isProd ? 'https://crownking.onrender.com/api' : 'http://localhost:5000/api');
 
 // Create axios instance with base URL
 export const apiClient = axios.create({
