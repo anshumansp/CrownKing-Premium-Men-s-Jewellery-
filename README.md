@@ -1,6 +1,6 @@
 # CrownKing - AI-Powered Premium Jewelry E-commerce Platform
 
-<img src="frontend/public/CrownKing.svg" alt="CrownKing Logo" style="background-color: #f5f5f5; padding: 10px; border-radius: 5px;" width="250"/>
+<img src="frontend/public/CrownKing.svg" alt="CrownKing Logo" style="background-color:rgb(227, 196, 196); padding: 10px; border-radius: 5px;" width="250"/>
 
 <div align="center">
   <img src="./public/image.png" alt="CrownKing Product Showcase" width="32%" />
