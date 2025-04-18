@@ -42,7 +42,12 @@ app = FastAPI(
 # Add CORS middleware to allow requests from the frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_origins=[
+        "http://localhost:3000",  # Local development frontend
+        "https://crownking.onrender.com",  # Backend API
+        "https://crownking.vercel.app",    # Production frontend
+        "https://crownking-py.onrender.com" # This service (for self-referential requests)
+    ],
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods including OPTIONS
     allow_headers=["*"],  # Allow all headers
