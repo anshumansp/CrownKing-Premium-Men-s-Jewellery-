@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ProductCard from './ProductCard';
 import TabSection from './TabSection';
 import Link from 'next/link';
 import { Product } from '@/types';
+import { getFeaturedProducts } from '@/services/productService';
+import { useInView } from 'react-intersection-observer';
+import LoadingSpinner from './LoadingSpinner';
 
-// Product data with jewelry images
-const products: Product[] = [
+// Move static products to fallback use only
+const staticProducts: Product[] = [
     {
         id: '1',
         name: 'Luxury Gold Chain Necklace',
@@ -305,28 +308,126 @@ const tabs = [
 
 export default function ProductSection() {
     const [activeTab, setActiveTab] = useState('all');
-    const [filteredProducts, setFilteredProducts] = useState<Product[]>(products);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const { ref, inView } = useInView({
+        threshold: 0,
+        triggerOnce: false
+    });
 
-    useEffect(() => {
-        // Filter products based on active tab
-        if (activeTab === 'all') {
-            setFilteredProducts(products.slice(0, 8));
-        } else if (activeTab === 'new') {
-            // Sort by creation date for new arrivals
-            const sorted = [...products].sort((a, b) =>
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            ).slice(0, 8);
-            setFilteredProducts(sorted);
-        } else if (activeTab === 'best') {
-            // Simulate best sellers by number of reviews
-            const sorted = [...products].sort((a, b) => b.reviews - a.reviews).slice(0, 8);
-            setFilteredProducts(sorted);
-        } else if (activeTab === 'top') {
-            // Sort by rating for top rated
-            const sorted = [...products].sort((a, b) => b.rating - a.rating).slice(0, 8);
-            setFilteredProducts(sorted);
+    // Fetch initial products
+    const fetchProducts = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            const response = await getFeaturedProducts(8);
+
+            if (response.success && response.data) {
+                // If API returns fewer than 4 products, supplement with static products
+                if (response.data.length < 4) {
+                    console.warn('API returned fewer than 4 products, supplementing with static data');
+
+                    // Create a map of existing IDs to avoid duplicates
+                    const existingIds = new Set(response.data.map(p => p.id));
+
+                    // Filter static products that don't exist in the API response
+                    const additionalProducts = staticProducts
+                        .filter(p => !existingIds.has(p.id))
+                        .slice(0, 4 - response.data.length);
+
+                    // If we still don't have enough, create duplicates with new IDs
+                    if (response.data.length + additionalProducts.length < 4) {
+                        const moreNeeded = 4 - (response.data.length + additionalProducts.length);
+                        const productsToRepeat = [...response.data, ...additionalProducts];
+
+                        for (let i = 0; i < moreNeeded; i++) {
+                            const sourceProduct = productsToRepeat[i % productsToRepeat.length];
+                            additionalProducts.push({
+                                ...sourceProduct,
+                                id: `${sourceProduct.id}-copy-${i + 1}`
+                            });
+                        }
+                    }
+
+                    setProducts([...response.data, ...additionalProducts]);
+                } else {
+                    setProducts(response.data);
+                }
+            } else {
+                // Fallback to static data if API fails
+                console.warn('API returned invalid data, using fallback static data');
+                setProducts(staticProducts);
+            }
+        } catch (err) {
+            console.error('Error fetching products:', err);
+            setError('Failed to load products. Using fallback data.');
+            setProducts(staticProducts);
+        } finally {
+            setIsLoading(false);
         }
-    }, [activeTab]);
+    }, []);
+
+    // Initial data fetch
+    useEffect(() => {
+        fetchProducts();
+    }, [fetchProducts]);
+
+    // Filter products when active tab or products change
+    useEffect(() => {
+        if (products.length === 0) return;
+
+        let filtered: Product[] = [];
+
+        switch (activeTab) {
+            case 'all':
+                filtered = products.slice(0, 8);
+                break;
+            case 'new':
+    // Sort by creation date for new arrivals
+                filtered = [...products]
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .slice(0, 8);
+                break;
+            case 'best':
+                // Sort by number of reviews for best sellers
+                filtered = [...products]
+                    .sort((a, b) => b.reviews - a.reviews)
+                    .slice(0, 8);
+                break;
+            case 'top':
+            // Sort by rating for top rated
+                filtered = [...products]
+                    .sort((a, b) => b.rating - a.rating)
+                    .slice(0, 8);
+                break;
+            default:
+                filtered = products.slice(0, 8);
+        }
+
+        // Ensure we have at least 4 products by repeating if necessary
+        if (filtered.length > 0 && filtered.length < 4) {
+            const repeatedProducts: Product[] = [];
+            // Calculate how many times we need to repeat the existing products
+            const repeatTimes = Math.ceil(4 / filtered.length);
+
+            for (let i = 0; i < repeatTimes; i++) {
+                repeatedProducts.push(...filtered.map(product => ({
+                    ...product,
+                    id: i > 0 ? `${product.id}-repeat-${i}` : product.id // Create unique keys for repeated products
+                })));
+            }
+
+            // Slice to get exactly what we need (might be more than 4 after repetition)
+            filtered = repeatedProducts.slice(0, 8);
+        }
+
+        setFilteredProducts(filtered);
+    }, [activeTab, products]);
 
     return (
         <section className="py-16">
@@ -342,12 +443,41 @@ export default function ProductSection() {
                 {/* Product Tabs */}
                 <TabSection tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
+                {/* Error Message */}
+                {error && (
+                    <div className="bg-red-50 text-red-700 p-4 mb-6 rounded">
+                        {error}
+                    </div>
+                )}
+
                 {/* Product Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
-                    {filteredProducts.map((product) => (
-                        <ProductCard key={product.id} product={product} />
-                    ))}
+                    {isLoading && products.length === 0 ? (
+                        // Show skeleton loading state when initially loading
+                        Array.from({ length: 8 }).map((_, index) => (
+                            <div key={index} className="animate-pulse">
+                                <div className="bg-gray-200 aspect-square mb-4"></div>
+                                <div className="h-4 bg-gray-200 mb-2 w-3/4"></div>
+                                <div className="h-4 bg-gray-200 mb-2 w-1/2"></div>
+                                <div className="h-4 bg-gray-200 w-1/4"></div>
+                            </div>
+                        ))
+                    ) : (
+                        filteredProducts.map((product) => (
+                            <ProductCard key={product.id} product={product} />
+                        ))
+                    )}
                 </div>
+
+                {/* Loading indicator */}
+                {isLoading && products.length > 0 && (
+                    <div className="flex justify-center mt-8">
+                        <LoadingSpinner />
+                    </div>
+                )}
+
+                {/* Loading reference element */}
+                <div ref={ref} className="h-10 mt-8"></div>
 
                 {/* View All Button */}
                 <div className="text-center mt-12">
