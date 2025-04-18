@@ -13,6 +13,7 @@ export const env = {
   STRIPE_KEY: process.env.STRIPE_SECRET_KEY!,
   REDIS_URL: process.env.REDIS_URL!,
   CLIENT_URL: process.env.CLIENT_URL!,
+  API_URL: process.env.API_URL || 'http://localhost:5000',
   FASTAPI_URL: process.env.FASTAPI_URL!,
   
   // Google OAuth settings
