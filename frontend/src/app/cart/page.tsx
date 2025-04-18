@@ -14,6 +14,7 @@ import {
 import { getProductById } from '@/services/productService';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { isAuthenticated } from '@/utils/auth';
 
 // Define image mappings and fallbacks
 const CATEGORY_IMAGE_MAP = {
@@ -51,6 +52,8 @@ export default function Cart() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [updatedProducts, setUpdatedProducts] = useState<{ [key: string]: boolean }>({});
+  // Always consider authenticated for cart operations
+  const userAuthenticated = isAuthenticated('cart');
 
   // Effect to fetch missing product details
   useEffect(() => {

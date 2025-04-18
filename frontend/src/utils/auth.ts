@@ -53,9 +53,30 @@ export const clearTokens = (): void => {
 
 /**
  * Check if user is authenticated
+ * If the context is cart or wishlist related, we'll consider the user as authenticated
+ * to allow guests to use those features
  */
-export const isAuthenticated = (): boolean => {
-  return !!getToken();
+export const isAuthenticated = (context?: string): boolean => {
+  const hasToken = !!getToken();
+  
+  // Allow access to cart/wishlist/checkout for all users
+  if (context === 'cart' || context === 'wishlist' || context === 'checkout') {
+    return true;
+  }
+  
+  if (typeof window !== 'undefined' && !hasToken) {
+    // Check if we're on a cart, wishlist, or checkout page
+    const pathname = window.location.pathname;
+    if (
+      pathname.includes('/cart') || 
+      pathname.includes('/wishlist') || 
+      pathname.includes('/checkout')
+    ) {
+      return true;
+    }
+  }
+  
+  return hasToken;
 };
 
 /**

@@ -48,11 +48,23 @@ export default function Checkout() {
     zipCode: '',
     country: 'India'
   });
+  // Always consider authenticated for checkout operations
+  const userAuthenticated = isAuthenticated('checkout');
+  // But track if the user is actually logged in
+  const actuallyLoggedIn = !!localStorage.getItem('token');
 
   // New: Add form error state
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [formTouched, setFormTouched] = useState<{ [key: string]: boolean }>({});
   const [paymentMethod, setPaymentMethod] = useState('cod');
+
+  // Redirect to cart if it's empty
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      router.push('/cart');
+      toast.error('Your cart is empty.');
+    }
+  }, [cartItems, router]);
 
   // Get image source with fallback
   const getImageSrc = (item: any) => {
@@ -168,6 +180,13 @@ export default function Checkout() {
     return isValid;
   };
 
+  const handleContinueToReview = () => {
+    if (validateShippingInfo()) {
+      setStep(2);
+      window.scrollTo(0, 0);
+    }
+  };
+
   const handleBackToShipping = () => {
     setStep(1);
     window.scrollTo(0, 0);
@@ -223,8 +242,8 @@ export default function Checkout() {
         shippingMethod: cartTotal > 10000 ? 'free' : 'standard'
       };
 
-      // If user is authenticated, create order via API
-      if (isAuthenticated()) {
+      // If user is actually logged in (has token), create order via API
+      if (actuallyLoggedIn) {
         const response = await orderService.createOrder(orderData);
 
         if (response.success) {
@@ -243,23 +262,42 @@ export default function Checkout() {
           throw new Error('Failed to create order');
         }
       } else {
-        // For unauthenticated users, just simulate order creation
-        // In a real app, you would create a guest order or prompt for login
+        // For guest users (no actual token), just simulate order creation
+        // Store the order in localStorage for order history
+        const guestOrderId = 'GUEST-' + Date.now().toString();
+        const guestOrder = {
+          id: guestOrderId,
+          items: cartItems,
+          total: total,
+          subtotal: subtotal,
+          tax: tax,
+          shipping: shipping,
+          shippingAddress,
+          paymentDetails,
+          status: 'processing',
+          createdAt: new Date().toISOString()
+        };
+
+        // Store in localStorage
+        const guestOrders = JSON.parse(localStorage.getItem('guestOrders') || '[]');
+        guestOrders.push(guestOrder);
+        localStorage.setItem('guestOrders', JSON.stringify(guestOrders));
+
+        // Add a small delay to simulate API call
         await new Promise(resolve => setTimeout(resolve, 1500));
 
         // Display success message
         toast.success('Order placed successfully!');
 
-        // Clear cart
+        // Clear cart in Redux store
         dispatch(clearCart());
 
-        // Navigate to confirmation page
-        router.push('/orders/confirmation');
+        // Navigate to a guest confirmation page
+        router.push(`/orders/confirmation?orderId=${guestOrderId}&guest=true`);
       }
     } catch (error) {
       console.error('Error placing order:', error);
       toast.error('Failed to place order. Please try again.');
-    } finally {
       setLoading(false);
     }
   };

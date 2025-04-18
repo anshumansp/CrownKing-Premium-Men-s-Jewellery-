@@ -14,14 +14,22 @@ interface WishlistState {
   error: string | null;
 }
 
-// Initialize state from localStorage if available
+// Get initial state from localStorage if available
 const getInitialState = (): WishlistState => {
+  let initialState = {
+    items: [],
+    loading: false,
+    error: null,
+  };
+  
   if (typeof window !== 'undefined') {
     try {
-      const localWishlist = localStorage.getItem('wishlist');
-      if (localWishlist) {
-        return {
-          items: JSON.parse(localWishlist),
+      const savedWishlist = localStorage.getItem('wishlist');
+      if (savedWishlist) {
+        const parsedWishlist = JSON.parse(savedWishlist);
+        initialState = {
+          ...initialState,
+          items: parsedWishlist,
           loading: false,
           error: null,
         };
@@ -31,90 +39,85 @@ const getInitialState = (): WishlistState => {
     }
   }
   
-  return {
-    items: [],
-    loading: false,
-    error: null,
-  };
+  return initialState;
 };
 
-// Create async thunk for fetching wishlist data
+// Async thunk to fetch wishlist items
 export const fetchWishlist = createAsyncThunk(
   'wishlist/fetchWishlist',
   async (_, { rejectWithValue }) => {
     try {
-      // If not authenticated, use localStorage
-      if (!isAuthenticated()) {
+      // If user is logged in with token, fetch from API
+      if (isAuthenticated() && localStorage.getItem('token')) {
+        const response = await wishlistService.getWishlist();
+        return response.data;
+      } else {
+        // For guest users, get from localStorage
         const localWishlist = localStorage.getItem('wishlist');
         return localWishlist ? JSON.parse(localWishlist) : [];
       }
-      
-      // Fetch from API
-      const response = await wishlistService.getWishlist();
-      return response.data.items.map((item: any) => item.product);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error?.message || 'Failed to fetch wishlist');
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch wishlist');
     }
   }
 );
 
-// Create async thunk for adding item to wishlist
+// Async thunk to add item to wishlist
 export const addToWishlist = createAsyncThunk(
   'wishlist/addToWishlist',
-  async (product: Item, { getState, rejectWithValue }) => {
+  async (product: any, { rejectWithValue, dispatch }) => {
     try {
-      const state = getState() as RootState;
-      const currentItems = state.wishlist.items;
-      
-      // Check if product already exists in wishlist
-      if (currentItems.some(item => item.id === product.id)) {
-        return currentItems;
+      // For logged in users, save to API
+      if (isAuthenticated() && localStorage.getItem('token')) {
+        await wishlistService.addToWishlist(product.id);
+        toast.success(`${product.name} added to wishlist!`);
+        return product;
+      } else {
+        // For guest users, save to localStorage
+        const localWishlist = localStorage.getItem('wishlist');
+        const wishlistItems = localWishlist ? JSON.parse(localWishlist) : [];
+        
+        // Check if the product is already in the wishlist
+        if (!wishlistItems.some((item: Item) => item.id === product.id)) {
+          wishlistItems.push(product);
+          localStorage.setItem('wishlist', JSON.stringify(wishlistItems));
+          toast.success(`${product.name} added to wishlist!`);
+        }
+        
+        return product;
       }
-      
-      // If authenticated, add to backend
-      if (isAuthenticated()) {
-        await wishlistService.addToWishlist({ productId: product.id });
-      }
-      
-      // Add new product to wishlist
-      const updatedItems = [...currentItems, product];
-      
-      // Save to localStorage
-      localStorage.setItem('wishlist', JSON.stringify(updatedItems));
-      
-      return updatedItems;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error?.message || 'Failed to add item to wishlist');
+      toast.error('Failed to add to wishlist');
+      return rejectWithValue(error.response?.data?.message || 'Failed to add to wishlist');
     }
   }
 );
 
-// Create async thunk for removing item from wishlist
+// Async thunk to remove item from wishlist
 export const removeFromWishlist = createAsyncThunk(
   'wishlist/removeFromWishlist',
-  async (productId: string, { getState, rejectWithValue }) => {
+  async (productId: string, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const currentItems = state.wishlist.items;
-      
-      // If authenticated, remove from backend
-      if (isAuthenticated()) {
+      // For logged in users, remove from API
+      if (isAuthenticated() && localStorage.getItem('token')) {
         await wishlistService.removeFromWishlist(productId);
-      }
-      
-      // Filter out the item to remove
-      const updatedItems = currentItems.filter(item => item.id !== productId);
-      
-      // Save to localStorage or remove if empty
-      if (updatedItems.length === 0) {
-        localStorage.removeItem('wishlist');
+        toast.success('Item removed from wishlist');
+        return productId;
       } else {
-        localStorage.setItem('wishlist', JSON.stringify(updatedItems));
+        // For guest users, remove from localStorage
+        const localWishlist = localStorage.getItem('wishlist');
+        if (localWishlist) {
+          const wishlistItems = JSON.parse(localWishlist);
+          const filteredItems = wishlistItems.filter((item: Item) => item.id !== productId);
+          localStorage.setItem('wishlist', JSON.stringify(filteredItems));
+          toast.success('Item removed from wishlist');
+        }
+        
+        return productId;
       }
-      
-      return updatedItems;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error?.message || 'Failed to remove item from wishlist');
+      toast.error('Failed to remove from wishlist');
+      return rejectWithValue(error.response?.data?.message || 'Failed to remove from wishlist');
     }
   }
 );
@@ -178,9 +181,12 @@ const wishlistSlice = createSlice({
   name: 'wishlist',
   initialState: getInitialState(),
   reducers: {
-    clearWishlist: (state) => {
+    clearWishlist(state) {
       state.items = [];
-      localStorage.removeItem('wishlist');
+      // Clear localStorage wishlist
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('wishlist');
+      }
     },
   },
   extraReducers: (builder) => {
@@ -190,14 +196,17 @@ const wishlistSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchWishlist.fulfilled, (state, action: PayloadAction<Item[]>) => {
+      .addCase(fetchWishlist.fulfilled, (state, action) => {
         state.loading = false;
         state.items = action.payload;
+        // Update localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('wishlist', JSON.stringify(action.payload));
+        }
       })
       .addCase(fetchWishlist.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        toast.error(state.error || 'Failed to fetch wishlist');
       })
       
       // Add to wishlist
@@ -205,15 +214,20 @@ const wishlistSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(addToWishlist.fulfilled, (state, action: PayloadAction<Item[]>) => {
+      .addCase(addToWishlist.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
-        toast.success('Item added to wishlist');
+        // Only add if not already in the wishlist
+        if (!state.items.some(item => item.id === action.payload.id)) {
+          state.items.push(action.payload);
+          // Update localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('wishlist', JSON.stringify(state.items));
+          }
+        }
       })
       .addCase(addToWishlist.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        toast.error(state.error || 'Failed to add item to wishlist');
       })
       
       // Remove from wishlist
@@ -221,15 +235,17 @@ const wishlistSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(removeFromWishlist.fulfilled, (state, action: PayloadAction<Item[]>) => {
+      .addCase(removeFromWishlist.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
-        toast.success('Item removed from wishlist');
+        state.items = state.items.filter(item => item.id !== action.payload);
+        // Update localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('wishlist', JSON.stringify(state.items));
+        }
       })
       .addCase(removeFromWishlist.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        toast.error(state.error || 'Failed to remove item from wishlist');
       })
       
       // Clear wishlist
@@ -277,6 +293,7 @@ export const selectWishlistLoading = (state: RootState) => state.wishlist.loadin
 export const selectWishlistError = (state: RootState) => state.wishlist.error;
 export const selectIsInWishlist = (state: RootState, productId: string) => 
   state.wishlist.items.some(item => item.id === productId);
+export const selectWishlistItemCount = (state: RootState) => state.wishlist.items.length;
 
 // Export reducer
 export default wishlistSlice.reducer; 

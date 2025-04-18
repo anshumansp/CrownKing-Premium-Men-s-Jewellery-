@@ -16,19 +16,21 @@ import {
     Item
 } from '@/redux/slices/wishlistSlice';
 import { useEffect } from 'react';
+import { isAuthenticated } from '@/utils/auth';
 
 export default function Wishlist() {
-    const { isLoading: authLoading, isAuthenticated } = useAuth();
+    const { isLoading: authLoading } = useAuth();
     const dispatch = useDispatch<AppDispatch>();
     const items = useSelector(selectWishlistItems);
     const isLoading = useSelector(selectWishlistLoading);
     const error = useSelector(selectWishlistError);
+    // Always consider authenticated for wishlist operations
+    const userAuthenticated = isAuthenticated('wishlist');
 
     useEffect(() => {
-        if (isAuthenticated) {
-            dispatch(fetchWishlist());
-        }
-    }, [isAuthenticated, dispatch]);
+        // Always fetch wishlist since we're allowing guest access
+        dispatch(fetchWishlist());
+    }, [dispatch]);
 
     const formatPrice = (price: number) => {
         return '₹' + price.toLocaleString('en-IN');
