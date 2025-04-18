@@ -4,6 +4,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChatBubbleLeftRightIcon, XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { SparklesIcon } from '@heroicons/react/24/solid';
 
+// Add Python API URL from environment variables
+const PY_API_URL = process.env.NEXT_PUBLIC_PY_API_URL || 'http://localhost:8000';
+
 interface ChatMessage {
     type: 'user' | 'bot';
     text: string;
@@ -112,7 +115,7 @@ const ChatWidget: React.FC = () => {
 
         try {
             // Call the API
-            const response = await fetch('http://localhost:8000/chat', {
+            const response = await fetch(`${PY_API_URL}/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
