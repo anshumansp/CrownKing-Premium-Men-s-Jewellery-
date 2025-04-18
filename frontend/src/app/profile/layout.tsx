@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -32,7 +32,7 @@ export default function ProfileLayout({ children }: ProfileLayoutProps) {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 mt-24">
+        <div className="container mx-auto px-4 py-8">
             <div className="flex flex-col md:flex-row gap-8">
                 <div className="w-full md:w-1/4">
                     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
@@ -64,7 +64,8 @@ interface ProfileNavLinkProps {
 
 function ProfileNavLink({ href, children }: ProfileNavLinkProps) {
     const router = useRouter();
-    const isActive = router.pathname === href;
+    const pathname = usePathname();
+    const isActive = pathname === href;
 
     return (
         <Link href={href}>

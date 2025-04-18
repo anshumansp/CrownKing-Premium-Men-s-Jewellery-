@@ -96,7 +96,7 @@ export default function ProductsPage() {
   // Error state with fallback data
   if (error && filteredProducts.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-12 min-h-screen">
+      <div className="container mx-auto px-4  min-h-screen">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-8" role="alert">
           <p className="font-bold">Error loading products</p>
           <p>{error}</p>
@@ -106,7 +106,7 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12 mt-2 min-h-screen">
+    <div className="container mx-auto px-4  mt-2 min-h-screen">
       {/* Display error toast if using fallback data but still show products */}
       {error && (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded mb-8" role="alert">
@@ -130,7 +130,7 @@ export default function ProductsPage() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-12">
+        <div className="flex flex-col items-center justify-center">
             <div className="w-48 h-48 bg-gray-200 rounded-full flex items-center justify-center mb-4">
               <span className="text-gray-400 text-4xl">🔍</span>
             </div>
