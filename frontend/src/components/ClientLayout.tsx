@@ -14,12 +14,6 @@ const Footer = dynamic(() => import('./Footer'), {
     loading: () => <div className="py-8 bg-gray-100" />
 });
 
-// Load WishlistProvider with a priority slightly lower than Navbar
-const WishlistProvider = dynamic(
-    () => import('@/contexts/WishlistContext').then(mod => ({ default: mod.WishlistProvider })),
-    { ssr: false }
-);
-
 // Placeholder components
 const NavbarPlaceholder = () => (
     <div className="h-16 bg-white shadow-sm fixed top-0 left-0 right-0 z-50 animate-pulse" />
@@ -62,11 +56,11 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
     }
 
     return (
-        <WishlistProvider>
+        <>
             <Navbar />
             <MainContainer>{children}</MainContainer>
             <Footer />
             <ChatWidget />
-        </WishlistProvider>
+        </>
     );
 } 

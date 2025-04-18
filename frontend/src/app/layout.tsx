@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import { Suspense } from 'react';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LoadingProvider } from '@/contexts/LoadingContext';
+import { WishlistProvider } from '@/contexts/WishlistContext';
 import { ReduxProvider } from '@/redux/provider';
 import LoadingFallback from '@/components/LoadingFallback';
 import ClientLayout from '@/components/ClientLayout';
@@ -35,11 +36,13 @@ export default function RootLayout({
         <ReduxProvider>
           <AuthProvider>
             <LoadingProvider>
-              <Suspense fallback={<LoadingFallback />}>
-                <ClientLayout>
-                  {children}
-                </ClientLayout>
-              </Suspense>
+              <WishlistProvider>
+                <Suspense fallback={<LoadingFallback />}>
+                  <ClientLayout>
+                    {children}
+                  </ClientLayout>
+                </Suspense>
+              </WishlistProvider>
             </LoadingProvider>
           </AuthProvider>
         </ReduxProvider>
